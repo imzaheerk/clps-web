@@ -612,6 +612,55 @@ html:not([data-theme='dark']) .p-inputtextarea:enabled:focus {
   animation: slide-in 0.3s ease-out;
 }
 
+/* Landing: phone mockup gentle 3D drift */
+@keyframes mobile-phone-drift {
+  0%,
+  100% {
+    transform: rotateY(-15deg) rotateX(5deg) translateY(0) translateZ(0);
+  }
+  33% {
+    transform: rotateY(-11deg) rotateX(3.5deg) translateY(-7px) translateZ(4px);
+  }
+  66% {
+    transform: rotateY(-18deg) rotateX(6deg) translateY(-4px) translateZ(-3px);
+  }
+}
+
+@keyframes mobile-phone-glow-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+  50% {
+    opacity: 0.72;
+    transform: translateX(-50%) scaleX(1.12);
+  }
+}
+
+.mobile-app-phone-drift {
+  transform-style: preserve-3d;
+  animation: mobile-phone-drift 8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.mobile-app-phone-glow-pulse {
+  animation: mobile-phone-glow-pulse 8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-app-phone-drift {
+    animation: none;
+    transform: rotateY(-15deg) rotateX(5deg);
+  }
+
+  .mobile-app-phone-glow-pulse {
+    animation: none;
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+
 /* Mobile Menu Styles */
 @media (max-width: 768px) {
   /* Prevent body scroll when menu is open */
