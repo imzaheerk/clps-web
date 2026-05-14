@@ -52,7 +52,7 @@ export default function HeroSection() {
         <div className="flex justify-center lg:justify-end">
           <div className="relative group">
             <div className="absolute -inset-4 bg-gradient-to-r from-primary via-cyan-500 to-emerald-500 rounded-full blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-            <div className="relative w-[320px] h-[320px] sm:w-[390px] sm:h-[390px] lg:w-[480px] lg:h-[480px]">
+            <div className="relative w-[340px] h-[340px] sm:w-[400px] sm:h-[400px] lg:w-[500px] lg:h-[500px] min-h-0 overflow-visible isolate bg-transparent">
               <HeroNetworkModel />
             </div>
           </div>
