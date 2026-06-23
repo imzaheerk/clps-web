@@ -1,8 +1,9 @@
 interface AuthInfoPanelProps {
   variant?: "login" | "signup";
+  className?: string;
 }
 
-export default function AuthInfoPanel({ variant = "signup" }: AuthInfoPanelProps) {
+export default function AuthInfoPanel({ variant = "signup", className = "" }: AuthInfoPanelProps) {
   const isLogin = variant === "login";
 
   const features = [
@@ -59,7 +60,7 @@ export default function AuthInfoPanel({ variant = "signup" }: AuthInfoPanelProps
   const displayFeatures = isLogin ? features : signupFeatures;
 
   return (
-    <div className="hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-center px-8 xl:px-12 py-12 relative">
+    <div className={`hidden lg:flex lg:w-1/2 xl:w-2/5 flex-col justify-center px-8 xl:px-12 py-12 relative ${className}`.trim()}>
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-sky-500/10 to-cyan-500/10 opacity-50"></div>
       

@@ -2,8 +2,8 @@ import { useState } from "react";
 import { InputText } from "primereact/inputtext";
 import { useSignup } from "./hooks";
 import { useAuth } from "@/contexts/AuthContext";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import { Button, showNotification, NetworkBackground, AuthInfoPanel, PrivacyPolicyModal } from "@/components";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button, showNotification, PrivacyPolicyModal } from "@/components";
 import { preventDefaultHandler, preventDefault } from "@/utils/eventHandlers";
 
 export default function Signup() {
@@ -86,22 +86,24 @@ export default function Signup() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-screen bg-bg-secondary">
-      {/* Network Background - Global Internet Network Visualization */}
-      <NetworkBackground />
+    <>
+      <div className="w-full flex flex-col gap-6 sm:gap-8 pb-8">
+        <button
+          onClick={() => navigate("/")}
+          className="self-start flex items-center gap-2 text-text-secondary hover:text-primary transition-colors duration-300 group mb-2"
+        >
+          <i className="pi pi-arrow-left text-sm group-hover:-translate-x-1 transition-transform duration-300"></i>
+          <span className="text-sm font-medium">Back</span>
+        </button>
 
-      <div className="relative z-10 flex w-full">
-        {/* Form Panel - Left Side */}
-        <div className="w-full lg:w-1/2 xl:w-3/5 flex justify-center items-start py-8 sm:py-12 px-4 sm:px-6 lg:px-8">
-          <div className="w-full max-w-[700px] flex flex-col gap-6 sm:gap-8 pb-8">
-          {/* Back Button */}
-          <button
-            onClick={() => navigate("/")}
-            className="self-start flex items-center gap-2 text-text-secondary hover:text-primary transition-colors duration-300 group mb-2"
-          >
-            <i className="pi pi-arrow-left text-sm group-hover:-translate-x-1 transition-transform duration-300"></i>
-            <span className="text-sm font-medium">Back</span>
-          </button>
+        <div className="text-center lg:text-left">
+          <h2 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-text-primary">
+            Create your account
+          </h2>
+          <p className="text-text-secondary text-sm sm:text-base">
+            Fill in your details to join Checknown
+          </p>
+        </div>
 
         <form onSubmit={preventDefaultHandler(handleSignup)}>
           <div className="flex flex-col gap-6 sm:gap-8">
@@ -433,29 +435,12 @@ export default function Signup() {
             </div>
           </div>
         </form>
-
-            <div className="mt-4 sm:mt-6 pt-6 sm:pt-8 border-t border-white/10 text-center">
-              <p className="text-text-secondary text-sm">
-                Already have an account?{" "}
-                <Link
-                  to="/login"
-                  className="text-primary no-underline font-semibold hover:underline transition-all"
-                >
-                  Login here
-                </Link>
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Info Panel - Right Side (desktop only, scroll inside panel if long) */}
-        <AuthInfoPanel variant="signup" />
       </div>
 
       <PrivacyPolicyModal
         visible={showPrivacyModal}
         onHide={() => setShowPrivacyModal(false)}
       />
-    </div>
+    </>
   );
 }

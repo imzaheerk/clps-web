@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import ScrollReveal from "@/components/ScrollReveal";
 
 export default function FooterSection() {
   const legalLinks = [
@@ -52,8 +53,9 @@ export default function FooterSection() {
     <footer className="relative border-t border-white/10 bg-bg-secondary/30 backdrop-blur-sm mt-auto">
       <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 mb-8">
+          <ScrollReveal variant="flip-up" className="lg:col-span-1">
           {/* Brand Section */}
-          <div className="lg:col-span-1">
+          <div>
             <h2 className="text-2xl sm:text-3xl font-black mb-3 bg-gradient-to-r from-primary via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
               Checknown
             </h2>
@@ -73,7 +75,9 @@ export default function FooterSection() {
               <div className="absolute left-4 right-4 top-1/2 h-px bg-gradient-to-r from-transparent via-cyan-400/60 to-transparent" />
             </div>
           </div>
+          </ScrollReveal>
 
+          <ScrollReveal variant="blur-up" delay={120}>
           {/* Contact Information */}
           <div>
             <h3 className="text-lg font-bold text-text-primary mb-6">
@@ -101,7 +105,9 @@ export default function FooterSection() {
               ))}
             </div>
           </div>
+          </ScrollReveal>
 
+          <ScrollReveal variant="fade-left" delay={220}>
           {/* Social Media & Legal */}
           <div>
             <h3 className="text-lg font-bold text-text-primary mb-4">
@@ -139,8 +145,10 @@ export default function FooterSection() {
               </ul>
             </div>
           </div>
+          </ScrollReveal>
         </div>
 
+        <ScrollReveal variant="pop-up" delay={180}>
         {/* Copyright */}
         <div className="border-t border-white/10 pt-8 text-center">
           <p className="text-text-secondary text-sm">
@@ -150,6 +158,7 @@ export default function FooterSection() {
             Connecting people across the internet.
           </p>
         </div>
+        </ScrollReveal>
       </div>
     </footer>
   );

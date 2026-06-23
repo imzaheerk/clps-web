@@ -15,6 +15,10 @@ export { default as GlassCard } from "./GlassCard";
 export { default as SectionHeader } from "./SectionHeader";
 export { default as AnimatedBackground } from "./AnimatedBackground";
 export { default as AuthInfoPanel } from "./AuthInfoPanel";
+export { default as AuthLayout } from "./AuthLayout";
+export { default as AuthModeSwitch } from "./AuthModeSwitch";
 export { default as ConnectedPeopleSection } from "./ConnectedPeopleSection";
+export { default as ScrollReveal } from "./ScrollReveal";
+export type { ScrollRevealProps, ScrollRevealVariant } from "./ScrollReveal";
 export { default as PrivacyPolicyModal } from "./PrivacyPolicyModal";
 

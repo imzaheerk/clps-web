@@ -1,3 +1,5 @@
+import ScrollReveal from "@/components/ScrollReveal";
+
 const stats = [
   {
     title: "Verified Local Profiles",
@@ -23,7 +25,7 @@ const stats = [
 
 export default function CommunityStatsSection() {
   return (
-    <section className="relative py-10 sm:py-12 lg:py-14 overflow-hidden">
+    <section className="relative py-10 sm:py-12 lg:py-14 overflow-hidden landing-section-perspective">
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute -top-20 -left-16 w-64 h-64 rounded-full bg-primary/10 blur-3xl animate-pulse" />
         <div
@@ -33,36 +35,39 @@ export default function CommunityStatsSection() {
       </div>
       <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative rounded-3xl border border-white/15 bg-bg-primary/45 backdrop-blur-md p-5 sm:p-6 lg:p-8 shadow-2xl">
-          <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.12),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.12),transparent_45%)] pointer-events-none" />
-          <div className="relative text-center mb-7">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-primary via-cyan-500 to-emerald-500 bg-clip-text text-transparent">
-              Built for Safe, Local Connections
-            </h2>
-            <p className="text-text-secondary text-base sm:text-lg max-w-2xl mx-auto">
-              Checknown helps you discover nearby people, communicate clearly, and
-              stay in control of your privacy.
-            </p>
-          </div>
+            <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.12),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.12),transparent_45%)] pointer-events-none" />
+            <div className="relative text-center mb-7">
+              <ScrollReveal variant="blur-up" delay={100}>
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-primary via-cyan-500 to-emerald-500 bg-clip-text text-transparent landing-title-shine">
+                  Built for Safe, Local Connections
+                </h2>
+              </ScrollReveal>
+              <ScrollReveal variant="pop-up" delay={200}>
+                <p className="text-text-secondary text-base sm:text-lg max-w-2xl mx-auto">
+                  Checknown helps you discover nearby people, communicate clearly, and
+                  stay in control of your privacy.
+                </p>
+              </ScrollReveal>
+            </div>
 
-          <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            {stats.map((stat) => (
-              <div
-                key={stat.title}
-                className="group rounded-2xl bg-bg-secondary/45 border border-white/10 p-4 text-center shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-primary/10"
-              >
-                <div className="mx-auto mb-3 w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center text-white shadow-lg transition-transform duration-300 group-hover:scale-110">
-                  <i className={`${stat.icon} text-lg`} />
-                </div>
-                <p className="text-base sm:text-lg font-bold text-text-primary mb-1">
-                  {stat.title}
-                </p>
-                <p className="text-sm text-text-secondary leading-relaxed">
-                  {stat.description}
-                </p>
-              </div>
-            ))}
+            <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              {stats.map((stat, index) => (
+                <ScrollReveal key={stat.title} variant="flip-up" delay={150 + index * 120}>
+                  <div className="landing-card-glow group rounded-2xl bg-bg-secondary/45 border border-white/10 p-4 text-center shadow-lg transition-all duration-500 hover:-translate-y-2 hover:border-primary/40 hover:shadow-primary/20 h-full">
+                    <div className="mx-auto mb-3 w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center text-white shadow-lg transition-transform duration-500 group-hover:scale-125 group-hover:rotate-6">
+                      <i className={`${stat.icon} text-lg`} />
+                    </div>
+                    <p className="text-base sm:text-lg font-bold text-text-primary mb-1">
+                      {stat.title}
+                    </p>
+                    <p className="text-sm text-text-secondary leading-relaxed">
+                      {stat.description}
+                    </p>
+                  </div>
+                </ScrollReveal>
+              ))}
+            </div>
           </div>
-        </div>
       </div>
     </section>
   );

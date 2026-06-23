@@ -37,6 +37,7 @@ import "primereact/resources/themes/lara-light-blue/theme.css";
 import "./App.css";
 import Login from "./pages/login/login";
 import Signup from "./pages/signup/signup";
+import AuthLayout from "./components/AuthLayout";
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { isAuthenticated } = useAuth();
@@ -52,14 +53,16 @@ function AppRoutes() {
         path="/"
         element={isAuthenticated ? <Home /> : <Landing />}
       />
-      <Route
-        path="/login"
-        element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />}
-      />
-      <Route
-        path="/signup"
-        element={!isAuthenticated ? <Signup /> : <Navigate to="/" replace />}
-      />
+      <Route element={<AuthLayout />}>
+        <Route
+          path="/login"
+          element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/signup"
+          element={!isAuthenticated ? <Signup /> : <Navigate to="/" replace />}
+        />
+      </Route>
       <Route
         path="/profile"
         element={
