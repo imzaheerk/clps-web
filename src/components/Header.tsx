@@ -1,12 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
+import BrandMark from "./BrandMark";
 import { useAuth } from "@/contexts/AuthContext";
-import { Dialog } from "primereact/dialog";
-import Button from "./Button";
-import Logo from "./Logo";
+import ResendModal from "./ResendModal";
+import AppMobileNav from "./AppMobileNav";
 import ThemeToggle from "./ThemeToggle";
 import { notificationService } from "@/services/notificationService/notificationService";
 import { useSubscription } from "@/hooks/useSubscription";
+import {
+  PRIMARY_NAV,
+  ACCOUNT_NAV,
+  isNavActive,
+} from "@/config/appNavigation";
 
 interface HeaderProps {
   showAuthButtons?: boolean;
@@ -17,25 +22,23 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
   const location = useLocation();
   const { isAuthenticated, logout, user } = useAuth();
   const { subscription } = useSubscription(user?.id ?? null, isAuthenticated);
-  const isPremium =
+  const isPremium = Boolean(
     isAuthenticated &&
-    subscription?.status === "active" &&
-    subscription?.plan &&
-    !subscription.plan.isDefault &&
-    subscription.plan.price > 0;
+      subscription?.status === "active" &&
+      subscription?.plan &&
+      !subscription.plan.isDefault &&
+      subscription.plan.price > 0
+  );
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeLandingMenu, setActiveLandingMenu] = useState<string | null>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const landingMenuCloseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isActive = (path: string) => {
-    if (path === "/") {
-      return location.pathname === "/";
-    }
-    return location.pathname.startsWith(path);
-  };
+  const isActive = (path: string) => isNavActive(location.pathname, path);
 
   // Load notification count
   useEffect(() => {
@@ -115,18 +118,8 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
     navigate("/");
   };
 
-  const handleMobileNavClick = (path: string) => {
-    navigate(path);
-    setShowMobileMenu(false);
-  };
-
   const handleUserButtonClick = () => {
-    if (typeof window !== "undefined" && window.matchMedia("(max-width: 767px)").matches) {
-      setShowUserMenu(false);
-      setShowMobileMenu(true);
-    } else {
-      setShowUserMenu((prev) => !prev);
-    }
+    setShowUserMenu((prev) => !prev);
   };
 
   const openMobileMenu = () => {
@@ -134,360 +127,505 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
     setShowMobileMenu(true);
   };
 
-  const navItems = [
-    { path: "/", label: "Home", icon: "pi-home" },
-    { path: "/search", label: "Search", icon: "pi-search" },
-    { path: "/messaging", label: "Messages", icon: "pi-comments" },
-    { path: "/announcements", label: "Announcements", icon: "pi-megaphone" },
-    { path: "/profile", label: "Profile", icon: "pi-user" },
+  const landingMenuItems = [
+    {
+      key: "features",
+      label: "Features",
+      title: "Powerful discovery features",
+      description:
+        "Explore tools designed to help people find the right connections quickly and safely.",
+      linksLeft: ["Smart profile discovery", "Community-focused matching", "Easy mobile-first experience"],
+      linksRight: ["Location-based filters", "Interest tags", "Saved searches"],
+      cards: [
+        {
+          title: "Local discovery",
+          subtitle: "Find people and groups around you with map-first browsing.",
+          variant: "grid" as const,
+        },
+        {
+          title: "Trusted matching",
+          subtitle: "Connect through shared interests, locality, and community signals.",
+          variant: "arc" as const,
+        },
+      ],
+    },
+    {
+      key: "services",
+      label: "Services",
+      title: "Services you can trust",
+      description:
+        "Checknown supports meaningful interactions with a reliable and easy-to-use platform.",
+      linksLeft: ["Verified member ecosystem", "Messaging and announcements", "Real-time notifications"],
+      linksRight: ["Profile visibility controls", "Contact requests", "Premium plans"],
+      cards: [
+        {
+          title: "Messaging",
+          subtitle: "Secure conversations with the people that matter to you.",
+          variant: "grid" as const,
+        },
+        {
+          title: "Announcements",
+          subtitle: "Share and discover updates that are relevant to your area.",
+          variant: "arc" as const,
+        },
+      ],
+    },
+    {
+      key: "how-it-works",
+      label: "How it works",
+      title: "Simple three-step flow",
+      description:
+        "Get started in minutes and begin building better local and professional connections.",
+      linksLeft: ["Create your profile", "Search and discover people", "Connect and collaborate"],
+      linksRight: ["Set privacy preferences", "Send your first message", "Grow your network"],
+      cards: [
+        {
+          title: "Get started fast",
+          subtitle: "Sign up, set your location, and start exploring in minutes.",
+          variant: "grid" as const,
+        },
+        {
+          title: "Build connections",
+          subtitle: "Move from discovery to conversation with a simple guided flow.",
+          variant: "arc" as const,
+        },
+      ],
+    },
+    {
+      key: "community",
+      label: "Community",
+      title: "Built for connected communities",
+      description:
+        "From local groups to professionals, Checknown helps people stay connected.",
+      linksLeft: ["Use-case focused approach", "Supportive network growth", "Designed for trust and safety"],
+      linksRight: ["Local groups", "Neighbourhood updates", "Professional circles"],
+      cards: [
+        {
+          title: "Growing network",
+          subtitle: "Join people who are already connecting in your area every day.",
+          variant: "grid" as const,
+        },
+        {
+          title: "Safe by design",
+          subtitle: "Privacy controls and reporting tools keep communities healthy.",
+          variant: "arc" as const,
+        },
+      ],
+    },
   ];
+
+  useEffect(() => {
+    return () => {
+      if (landingMenuCloseTimeoutRef.current) {
+        clearTimeout(landingMenuCloseTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleLandingMenuOpen = (menuKey: string) => {
+    if (landingMenuCloseTimeoutRef.current) {
+      clearTimeout(landingMenuCloseTimeoutRef.current);
+      landingMenuCloseTimeoutRef.current = null;
+    }
+    setActiveLandingMenu(menuKey);
+  };
+
+  const handleLandingMenuClose = () => {
+    if (landingMenuCloseTimeoutRef.current) {
+      clearTimeout(landingMenuCloseTimeoutRef.current);
+    }
+    landingMenuCloseTimeoutRef.current = setTimeout(() => {
+      setActiveLandingMenu(null);
+    }, 160);
+  };
+
+  const clearLandingMenuClose = () => {
+    if (landingMenuCloseTimeoutRef.current) {
+      clearTimeout(landingMenuCloseTimeoutRef.current);
+      landingMenuCloseTimeoutRef.current = null;
+    }
+  };
+
+  const activeLandingMenuItem = landingMenuItems.find((item) => item.key === activeLandingMenu);
+
+  const isLandingHeader = !isAuthenticated;
+
+  const toggleLandingMobileMenu = () => {
+    setShowMobileMenu((prev) => !prev);
+  };
+
+  const renderLandingNavItem = (item: (typeof landingMenuItems)[number], onSelect?: () => void) => {
+    const isActiveLandingItem = activeLandingMenu === item.key;
+    return (
+      <button
+        key={item.key}
+        id={`landing-nav-${item.key}`}
+        type="button"
+        className={`header-landing-nav-item group ${isActiveLandingItem ? "active" : ""}`}
+        onMouseEnter={() => handleLandingMenuOpen(item.key)}
+        onFocus={() => handleLandingMenuOpen(item.key)}
+        onClick={() => {
+          handleLandingMenuOpen(item.key);
+          onSelect?.();
+        }}
+        aria-expanded={isActiveLandingItem}
+        aria-haspopup="dialog"
+      >
+        {item.label}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={`header-landing-chevron ${isActiveLandingItem ? "is-open" : ""}`}
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      </button>
+    );
+  };
+
+  const renderLandingMegaMenu = () => {
+    if (!activeLandingMenuItem) return null;
+
+    return (
+      <div
+        className="header-mega-menu-panel"
+        role="dialog"
+        aria-label={`${activeLandingMenuItem.label} menu`}
+      >
+        <div key={activeLandingMenuItem.key} className="header-mega-menu-content">
+          <div className="header-mega-menu-grid">
+            <div className="header-mega-menu-links">
+              <ul className="header-mega-link-col">
+                {activeLandingMenuItem.linksLeft.map((link) => (
+                  <li key={link}>
+                    <span className="header-mega-link">{link}</span>
+                  </li>
+                ))}
+              </ul>
+              <ul className="header-mega-link-col">
+                {activeLandingMenuItem.linksRight.map((link) => (
+                  <li key={link}>
+                    <span className="header-mega-link">{link}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="header-mega-menu-cards">
+              {activeLandingMenuItem.cards.map((card) => (
+                <div
+                  key={card.title}
+                  className={`header-mega-card header-mega-card--${card.variant}`}
+                >
+                  <div className="header-mega-card-visual" aria-hidden="true" />
+                  <div className="header-mega-card-copy">
+                    <p className="header-mega-card-title">{card.title}</p>
+                    <p className="header-mega-card-subtitle">{card.subtitle}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
-      <header
-        className={`header-bar fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
-          isScrolled ? "shadow-lg" : ""
-        }`}
-      >
-        <div className="relative max-w-[1400px] mx-auto px-2.5 sm:px-6 lg:px-8">
+      {isLandingHeader ? (
+        <header
+          className={`header-bar header-bar--landing sticky top-0 z-50 w-full transition duration-200 ease-in-out ${
+            isScrolled ? "header-bar--landing-scrolled" : ""
+          }`}
+          onMouseLeave={handleLandingMenuClose}
+        >
           <div
-            className={`items-center h-14 md:h-[72px] gap-2 sm:gap-4 ${
-              isAuthenticated
-                ? "flex justify-between md:grid md:grid-cols-[1fr_auto_1fr]"
-                : "grid grid-cols-[minmax(0,1fr)_auto] gap-x-2 sm:gap-x-4"
-            }`}
+            className="header-landing-wrap"
+            onMouseEnter={clearLandingMenuClose}
           >
-            {/* Left: Hamburger (when logged in) + Logo */}
-            <div className="flex items-center gap-2 sm:gap-6 min-w-0 overflow-hidden">
-              {isAuthenticated && (
-                <button
-                  onClick={openMobileMenu}
-                  className="md:hidden p-2 -ml-1 rounded-xl text-text-secondary hover:text-primary hover:bg-primary/10 transition-all active:scale-95 touch-manipulation shrink-0"
-                  aria-label="Open menu"
-                >
-                  <i className="pi pi-bars text-lg" />
-                </button>
-              )}
-              <Link
-                to="/"
-                className="min-w-0 max-w-full shrink focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl"
-              >
-                <Logo />
-              </Link>
-            </div>
-
-            {/* Center: Nav tray only when logged in (desktop) */}
-            {isAuthenticated && (
-              <nav className="hidden md:flex nav-tray justify-center" aria-label="Main">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`nav-link-pill px-4 py-2.5 text-sm font-semibold no-underline flex items-center gap-2.5 ${
-                      isActive(item.path) ? "active" : "text-text-secondary hover:text-primary hover:bg-primary/10"
-                    }`}
-                  >
-                    <i className={`pi ${item.icon} text-[15px]`} />
-                    <span>{item.label}</span>
+          <div className="header-shell relative z-10 mx-auto w-full min-h-[60px] max-w-5xl px-6 md:min-h-[58px] md:max-w-7xl">
+            {/* Mobile bar */}
+            <div className="header-mobile-bar relative z-20 flex w-full flex-col md:hidden">
+              <div className="flex w-full items-center px-6 py-4">
+                <div className="flex-auto">
+                  <Link to="/" className="header-brand-link">
+                    <BrandMark size="md" />
                   </Link>
-                ))}
-              </nav>
-            )}
-
-            {/* Right: Theme (hidden on mobile when logged in), Notifications, User / Auth */}
-            <div className="flex items-center justify-end gap-1 sm:gap-2 md:gap-3 shrink-0 [&_.theme-pill]:shrink-0">
-              <div className={isAuthenticated ? "hidden md:block" : undefined}>
-                <ThemeToggle />
-              </div>
-              {isAuthenticated && (
-                <>
-                  <Link
-                    to="/notifications"
-                    className="relative p-2 sm:p-2.5 rounded-xl text-text-secondary hover:text-primary hover:bg-primary/10 transition-all active:scale-95 touch-manipulation"
-                    title="Notifications"
-                    aria-label={`Notifications${notificationCount > 0 ? `, ${notificationCount} unread` : ""}`}
+                </div>
+                <div className="flex flex-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={toggleLandingMobileMenu}
+                    aria-controls="mobile-menu"
+                    aria-expanded={showMobileMenu}
+                    aria-label="Open main menu"
+                    className="header-menu-btn"
                   >
-                    <i className="pi pi-bell text-lg sm:text-xl" />
-                    {notificationCount > 0 && (
-                      <span className="header-badge absolute -top-0.5 -right-0.5 min-w-[18px] h-4 sm:min-w-[20px] sm:h-5 px-1 rounded-full bg-gradient-to-r from-red-500 to-rose-500 flex items-center justify-center shadow-md ring-2 ring-bg-primary">
-                        <span className="text-[9px] sm:text-[10px] font-bold text-white">
-                          {notificationCount > 99 ? "99+" : notificationCount > 9 ? "9+" : notificationCount}
-                        </span>
-                      </span>
-                    )}
-                  </Link>
-                  <div className="relative" ref={userMenuRef}>
-                    <button
-                      onClick={handleUserButtonClick}
-                      className="flex items-center gap-1.5 sm:gap-2.5 pl-0.5 sm:pl-1 pr-2 sm:pr-2.5 py-1 sm:py-1.5 rounded-xl text-text-primary hover:bg-primary/10 transition-all active:scale-[0.98] touch-manipulation"
-                      title="User Menu"
-                      aria-label="User menu"
-                      aria-expanded={showUserMenu}
+                    <span className="sr-only">Open main menu</span>
+                    <svg
+                      aria-hidden="true"
+                      className="block h-8 w-8"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      viewBox="0 0 24 24"
                     >
-                      <div className="relative flex-shrink-0">
-                        <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-primary via-cyan-500 to-sky-600 flex items-center justify-center shadow-lg shadow-primary/25 border-2 border-white/20 dark:border-slate-600/50">
-                          <span className="text-white font-bold text-xs sm:text-sm">{(user?.name || "U")[0].toUpperCase()}</span>
-                        </div>
-                        {isPremium && (
-                          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center border-2 border-bg-primary" title="Premium">
-                            <i className="pi pi-star-fill text-[8px] text-white" />
-                          </span>
-                        )}
-                        <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-success rounded-full border-2 border-bg-primary" title="Online" />
-                      </div>
-                      <i className={`pi pi-chevron-down text-xs transition-transform duration-200 hidden sm:block ${showUserMenu ? "rotate-180" : ""}`} />
-                    </button>
-                    {/* User dropdown: desktop only; on mobile avatar opens drawer */}
-                    {showUserMenu && (
-                      <div className="header-dropdown header-dropdown-in absolute right-0 top-full mt-2 w-[min(288px,calc(100vw-1.5rem))] sm:w-72 z-50 hidden md:block">
-                        <div className="p-3 sm:p-4 border-b border-border">
-                          <div className="flex items-center gap-3">
-                            <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-primary via-cyan-500 to-sky-600 flex items-center justify-center shadow-lg border-2 border-border flex-shrink-0 relative">
-                              <span className="text-white font-bold text-base sm:text-lg">{(user?.name || "U")[0].toUpperCase()}</span>
-                              {isPremium && (
-                                <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center border-2 border-bg-primary" title="Premium">
-                                  <i className="pi pi-star-fill text-[10px] text-white" />
-                                </span>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-bold text-text-primary truncate">{user?.name || "User"}</p>
-                              <p className="text-xs text-text-secondary truncate">{user?.mobileNumber || "No phone"}</p>
-                              {isPremium && (
-                                <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1">
-                                  <i className="pi pi-star-fill" />
-                                  {subscription?.plan?.name || "Premium"} plan
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="py-2">
-                          {[
-                            { path: "/profile", label: "My Profile", icon: "pi-user" },
-                            { path: "/subscription", label: "Subscription", icon: "pi-credit-card" },
-                            { path: "/plans", label: "Plans & Pricing", icon: "pi-star" },
-                          ].map(({ path, label, icon }) => (
-                            <button
-                              key={path}
-                              onClick={() => {
-                                navigate(path);
-                                setShowUserMenu(false);
-                              }}
-                              className="w-full text-left px-4 py-3 text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center gap-3 transition-colors"
-                            >
-                              <span className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                                <i className={`pi ${icon} text-sm`} />
-                              </span>
-                              <span>{label}</span>
-                            </button>
-                          ))}
-                          <div className="border-t border-border my-2" />
-                          <button
-                            onClick={() => {
-                              setShowUserMenu(false);
-                              setShowLogoutModal(true);
-                            }}
-                            className="w-full text-left px-4 py-3 text-sm font-medium text-red-500 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
-                          >
-                            <span className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500">
-                              <i className="pi pi-sign-out text-sm" />
-                            </span>
-                            <span className="text-red-500">Logout</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-              {!isAuthenticated && showAuthButtons && (
-                <>
-                  {/* Compact icon actions on small screens — full labels from md up */}
-                  <Button
-                    icon="pi pi-sign-in"
-                    aria-label="Login"
-                    onClick={() => navigate("/login")}
-                    variant="outlined"
-                    Size="small"
-                    className="md:!hidden !h-9 !w-9 !min-w-[2.25rem] !p-0 shrink-0 [&_.p-button-icon]:m-0 [&_.p-button-label]:hidden"
-                  />
-                  <Button
-                    icon="pi pi-user-plus"
-                    aria-label="Sign up"
-                    onClick={() => navigate("/signup")}
-                    variant="gradient"
-                    Size="small"
-                    className="md:!hidden !h-9 !w-9 !min-w-[2.25rem] !p-0 shrink-0 [&_.p-button-icon]:m-0 [&_.p-button-label]:hidden"
-                  />
-                  <Button
-                    label="Login"
-                    icon="pi pi-sign-in"
-                    onClick={() => navigate("/login")}
-                    variant="outlined"
-                    Size="small"
-                    className="!hidden md:!inline-flex"
-                  />
-                  <Button
-                    label="Sign Up"
-                    icon="pi pi-user-plus"
-                    onClick={() => navigate("/signup")}
-                    variant="gradient"
-                    Size="small"
-                    className="!hidden md:!inline-flex"
-                  />
-                </>
+                      <path
+                        d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              {showMobileMenu && (
+                <div id="mobile-menu" className="header-landing-mobile-panel w-full border-t border-white/10 px-6 py-5">
+                  <ul className="flex flex-col gap-1">
+                    {landingMenuItems.map((item) => (
+                      <li key={item.key}>
+                        <button
+                          type="button"
+                          className="landing-mobile-nav-item w-full text-left py-2.5 text-sm font-medium"
+                          onClick={() => {
+                            handleLandingMenuOpen(item.key);
+                            setShowMobileMenu(false);
+                          }}
+                        >
+                          {item.label}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {showAuthButtons && (
+                    <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5">
+                      <button type="button" onClick={() => navigate("/login")} className="header-login-text text-left">
+                        Log in
+                      </button>
+                      <button type="button" onClick={() => navigate("/signup")} className="header-get-started-btn w-full">
+                        Get started
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
+
+            {/* Desktop bar */}
+            <div className="header-desktop-bar mx-auto hidden h-[58px] w-full items-center md:flex">
+              <div className="flex flex-1 lg:w-[225px]">
+                <Link to="/" className="header-brand-link py-1">
+                  <BrandMark size="md" />
+                </Link>
+              </div>
+
+              <div className="header-landing-nav-zone relative">
+                <ul className="header-landing-nav-list flex items-center">
+                  {landingMenuItems.map((item) => (
+                    <li key={item.key}>{renderLandingNavItem(item)}</li>
+                  ))}
+                </ul>
+              </div>
+
+              {showAuthButtons && (
+                <div className="flex flex-1 justify-end gap-4">
+                  <button
+                    type="button"
+                    onClick={() => navigate("/login")}
+                    className="header-login-text hidden lg:inline-flex"
+                    aria-label="Log in"
+                  >
+                    Log in
+                  </button>
+                  <button type="button" onClick={() => navigate("/signup")} className="header-get-started-btn">
+                    Get started
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {activeLandingMenuItem && (
+            <div className="header-mega-menu-portal hidden md:block">
+              <div className="header-mega-menu-container">{renderLandingMegaMenu()}</div>
+            </div>
+          )}
+          </div>
+        </header>
+      ) : (
+        <header
+          className={`header-bar header-bar--app sticky top-0 z-[100] transition-all duration-300 ${
+            isScrolled ? "header-bar--app-scrolled" : "header-bar--app-top"
+          }`}
+        >
+        <div className="header-app-shell">
+          <div className="header-app-inner">
+            <BrandMark size="sm" to="/" />
+
+            <nav className="hidden lg:flex header-app-nav" aria-label="Main">
+              {PRIMARY_NAV.map((item) => (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className={`header-app-nav-link ${isActive(item.path) ? "is-active" : ""}`}
+                  title={item.description}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="hidden lg:flex header-app-actions">
+              <ThemeToggle />
+              <Link
+                to="/notifications"
+                className={`header-app-icon-btn relative ${isActive("/notifications") ? "is-active" : ""}`}
+                title="Notifications"
+                aria-label={`Notifications${notificationCount > 0 ? `, ${notificationCount} unread` : ""}`}
+              >
+                <i className="pi pi-bell" />
+                {notificationCount > 0 ? (
+                  <span className="header-app-badge">
+                    {notificationCount > 99 ? "99+" : notificationCount > 9 ? "9+" : notificationCount}
+                  </span>
+                ) : null}
+              </Link>
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  type="button"
+                  onClick={handleUserButtonClick}
+                  className={`header-account-trigger ${showUserMenu ? "is-open" : ""}`}
+                  title="Account"
+                  aria-label="Account menu"
+                  aria-expanded={showUserMenu}
+                >
+                  <span className="header-account-trigger-name">
+                    {user?.name?.split(" ")[0] || "Account"}
+                  </span>
+                  <span className="header-account-trigger-avatar">
+                    {(user?.name || "U")[0].toUpperCase()}
+                    {isPremium ? (
+                      <span className="header-account-trigger-premium" title="Premium">
+                        <i className="pi pi-star-fill" />
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+                {showUserMenu ? (
+                  <div className="header-account-menu">
+                    <div className="header-account-menu-profile">
+                      <span className="header-account-menu-avatar">
+                        {(user?.name || "U")[0].toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <p className="header-account-menu-name">{user?.name || "User"}</p>
+                        <p className="header-account-menu-meta">{user?.mobileNumber || "No phone"}</p>
+                        {isPremium ? (
+                          <span className="header-account-menu-plan">
+                            <i className="pi pi-star-fill" />
+                            {subscription?.plan?.name || "Premium"}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className="header-account-menu-divider" />
+                    <div className="header-account-menu-links">
+                      {ACCOUNT_NAV.map(({ path, label, icon }) => (
+                        <button
+                          key={path}
+                          type="button"
+                          onClick={() => {
+                            navigate(path);
+                            setShowUserMenu(false);
+                          }}
+                          className={`header-account-menu-link ${isActive(path) ? "is-active" : ""}`}
+                        >
+                          <span className="header-account-menu-link-icon">
+                            <i className={`pi ${icon}`} />
+                          </span>
+                          <span className="header-account-menu-link-label">{label}</span>
+                          {path === "/notifications" && notificationCount > 0 ? (
+                            <span className="header-account-menu-badge">
+                              {notificationCount > 99 ? "99+" : notificationCount}
+                            </span>
+                          ) : null}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="header-account-menu-divider" />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        setShowLogoutModal(true);
+                      }}
+                      className="header-account-menu-logout"
+                    >
+                      <i className="pi pi-sign-out" />
+                      Log out
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={openMobileMenu}
+              className="lg:hidden header-app-menu-btn"
+              aria-label="Open menu"
+            >
+              <i className="pi pi-bars" />
+            </button>
           </div>
         </div>
       </header>
+      )}
 
-      {/* Spacer for fixed header */}
-      <div className="h-14 md:h-[72px]" />
+      {!isLandingHeader && (
+        <AppMobileNav
+          open={showMobileMenu}
+          onClose={() => setShowMobileMenu(false)}
+          user={user}
+          isPremium={isPremium}
+          subscription={subscription}
+          notificationCount={notificationCount}
+          onLogout={() => {
+            setShowMobileMenu(false);
+            setShowLogoutModal(true);
+          }}
+        />
+      )}
 
-      {/* Mobile menu backdrop */}
-      <div
-        className={`fixed inset-0 z-[200] md:hidden transition-opacity duration-300 bg-black/60 backdrop-blur-sm [data-theme="dark"]:bg-black/75 ${
-          showMobileMenu ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setShowMobileMenu(false)}
-        aria-hidden
-      />
-      {/* Mobile sidebar - cool drawer with gradient edge */}
-      <div
-        className={`fixed inset-y-0 left-0 w-[300px] max-w-[85vw] z-[201] md:hidden transition-transform duration-300 ease-out ${
-          showMobileMenu ? "translate-x-0" : "-translate-x-full"
-        }`}
-        role="dialog"
-        aria-label="Main menu"
-      >
-        <div className="flex flex-col h-full bg-bg-primary border-r border-border shadow-2xl">
-          {/* Gradient accent on right edge of drawer */}
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-1 bg-gradient-to-b from-primary/60 via-cyan-500/40 to-transparent opacity-80" />
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <Logo />
-            <div className="flex items-center gap-2">
-              <div className="md:hidden">
-                <ThemeToggle />
-              </div>
-              <button
-                onClick={() => setShowMobileMenu(false)}
-                className="p-2.5 rounded-xl text-text-secondary hover:text-primary hover:bg-primary/10 transition-all active:scale-95 touch-manipulation"
-                aria-label="Close menu"
-              >
-                <i className="pi pi-times text-xl" />
-              </button>
-            </div>
-          </div>
-          {isAuthenticated && user && (
-            <div className="px-4 py-4 border-b border-border">
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
-                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-primary via-cyan-500 to-sky-600 flex items-center justify-center shadow-md border-2 border-border flex-shrink-0">
-                  <span className="text-white font-bold text-lg">{(user.name || "U")[0].toUpperCase()}</span>
-                  {isPremium && (
-                    <span className="absolute -top-0.5 -right-0.5 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center border-2 border-bg-primary" title="Premium">
-                      <i className="pi pi-star-fill text-[10px] text-white" />
-                    </span>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-bold text-text-primary truncate">{user.name || "User"}</p>
-                  <p className="text-xs text-text-secondary truncate">{user.mobileNumber || "No phone"}</p>
-                  {isPremium && (
-                    <p className="text-xs font-medium text-amber-600 dark:text-amber-400 mt-0.5 flex items-center gap-1">
-                      <i className="pi pi-star-fill" />
-                      {subscription?.plan?.name || "Premium"} plan
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          {isAuthenticated && (
-            <nav className="flex-1 overflow-y-auto py-4 px-3" aria-label="Mobile navigation">
-              <div className="flex flex-col gap-1">
-                {navItems.map((item) => (
-                  <button
-                    key={item.path}
-                    onClick={() => handleMobileNavClick(item.path)}
-                    className={`w-full text-left py-3.5 px-4 rounded-xl text-sm font-semibold flex items-center gap-3 transition-all ${
-                      isActive(item.path)
-                        ? "text-primary bg-primary/10 border-l-4 border-l-primary -ml-[3px] pl-[calc(1rem+3px)]"
-                        : "text-text-secondary hover:text-primary hover:bg-primary/10 border-l-4 border-l-transparent"
-                    }`}
-                  >
-                    <span className={`w-9 h-9 rounded-lg flex items-center justify-center ${isActive(item.path) ? "bg-primary/20 text-primary" : "bg-bg-tertiary text-text-secondary"}`}>
-                      <i className={`pi ${item.icon}`} />
-                    </span>
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </nav>
-          )}
-          {isAuthenticated && (
-            <div className="p-4 border-t border-border space-y-2 bg-bg-secondary/50">
-              <button
-                onClick={() => {
-                  setShowMobileMenu(false);
-                  navigate("/subscription");
-                }}
-                className="w-full text-left py-3 px-4 rounded-xl text-sm font-medium text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center gap-3 transition-colors"
-              >
-                <span className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                  <i className="pi pi-credit-card" />
-                </span>
-                <span>Subscription</span>
-              </button>
-              <button
-                onClick={() => {
-                  setShowMobileMenu(false);
-                  setShowLogoutModal(true);
-                }}
-                className="w-full text-left py-3 px-4 rounded-xl text-sm font-medium text-red-500 hover:bg-red-500/10 flex items-center gap-3 transition-colors"
-              >
-                <span className="w-9 h-9 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500">
-                  <i className="pi pi-sign-out" />
-                </span>
-                <span className="text-red-500">Logout</span>
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Logout Modal */}
-      <Dialog
+      <ResendModal
         visible={showLogoutModal}
         onHide={() => setShowLogoutModal(false)}
-        header="Confirm Logout"
-        modal
-        className="w-full max-w-md"
+        badge="Session"
+        title="Log out?"
+        description="You'll need to sign in again to access your account and messages."
+        icon="pi-sign-out"
+        tone="danger"
         footer={
-          <div className="flex gap-2 justify-end">
-            <Button
-              label="Cancel"
-              onClick={() => setShowLogoutModal(false)}
-              variant="outlined"
-              Size="medium"
-              type="button"
-            />
-            <Button
-              label="Logout"
-              icon="pi pi-sign-out"
-              onClick={handleLogout}
-              variant="primary"
-              Size="medium"
-              type="button"
-            />
+          <div className="resend-modal-actions-row">
+            <button type="button" className="resend-btn resend-btn-secondary" onClick={() => setShowLogoutModal(false)}>
+              Stay signed in
+            </button>
+            <button type="button" className="resend-btn resend-btn-danger" onClick={handleLogout}>
+              <i className="pi pi-sign-out" />
+              Log out
+            </button>
           </div>
         }
-      >
-        <p className="text-text-primary m-0">
-          Are you sure you want to logout? You will need to login again to access your account.
-        </p>
-      </Dialog>
+      />
     </>
   );
 }
