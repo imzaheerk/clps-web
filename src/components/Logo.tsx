@@ -1,3 +1,5 @@
+import BrandMark from "./BrandMark";
+
 interface LogoProps {
   size?: "small" | "large";
   showText?: boolean;
@@ -65,18 +67,7 @@ export default function Logo({ size = "small", showText = true }: LogoProps) {
         />
       </div>
       {showText && (
-        <h1
-          className={`
-            font-extrabold tracking-tight m-0 min-w-0 truncate
-            bg-gradient-to-r from-sky-600 via-primary to-cyan-500
-            bg-clip-text text-transparent
-            drop-shadow-sm
-            ${isLarge ? "text-5xl sm:text-6xl" : "text-lg sm:text-xl md:text-2xl"}
-            ${!isLarge ? "hidden sm:block" : ""}
-          `}
-        >
-          Checknown
-        </h1>
+        <BrandMark size={isLarge ? "2xl" : "lg"} className={!isLarge ? "hidden sm:inline-flex" : ""} />
       )}
     </div>
   );

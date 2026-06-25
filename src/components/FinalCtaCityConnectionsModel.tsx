@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDeferredTheme } from "@/hooks/useDeferredTheme";
 
 function readCssHexVar(name: string, fallback: string): number {
   if (typeof document === "undefined") {
@@ -20,13 +20,13 @@ type BuildingSpec = { x: number; z: number; w: number; d: number; h: number; see
  */
 export default function FinalCtaCityConnectionsModel() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme();
+  const { renderTheme, opacity } = useDeferredTheme();
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const isDark = theme === "dark";
+    const isDark = renderTheme === "dark";
     const primary = readCssHexVar("--color-primary", "#0ea5e9");
     const primaryLight = readCssHexVar("--color-primary-light", "#38bdf8");
     const primaryDark = readCssHexVar("--color-primary-dark", "#0284c7");
@@ -374,7 +374,13 @@ export default function FinalCtaCityConnectionsModel() {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [theme]);
+  }, [renderTheme]);
 
-  return <div ref={containerRef} className="h-full w-full min-h-[220px]" />;
+  return (
+    <div
+      ref={containerRef}
+      className="cta-city-canvas h-full w-full min-h-[220px]"
+      style={{ opacity }}
+    />
+  );
 }

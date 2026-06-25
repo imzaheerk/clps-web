@@ -251,7 +251,27 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
   const isLandingHeader = !isAuthenticated;
 
   const toggleLandingMobileMenu = () => {
-    setShowMobileMenu((prev) => !prev);
+    setShowMobileMenu((prev) => {
+      if (prev) setActiveLandingMenu(null);
+      return !prev;
+    });
+  };
+
+  const scrollToPricing = () => {
+    const goToPricing = () => {
+      const section = document.getElementById("pricing");
+      if (section) {
+        section.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    };
+
+    if (location.pathname !== "/") {
+      navigate("/#pricing");
+      setTimeout(goToPricing, 120);
+      return;
+    }
+
+    goToPricing();
   };
 
   const renderLandingNavItem = (item: (typeof landingMenuItems)[number], onSelect?: () => void) => {
@@ -291,16 +311,21 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
     );
   };
 
-  const renderLandingMegaMenu = () => {
+  const renderLandingMegaMenu = (embedded = false) => {
     if (!activeLandingMenuItem) return null;
 
     return (
       <div
-        className="header-mega-menu-panel"
+        className={`header-mega-menu-panel${embedded ? " header-mega-menu-panel--embedded" : ""}`}
         role="dialog"
         aria-label={`${activeLandingMenuItem.label} menu`}
       >
         <div key={activeLandingMenuItem.key} className="header-mega-menu-content">
+          <div className="header-mega-menu-intro">
+            <p className="header-mega-menu-kicker">{activeLandingMenuItem.label}</p>
+            <h3 className="header-mega-menu-title">{activeLandingMenuItem.title}</h3>
+            <p className="header-mega-menu-description">{activeLandingMenuItem.description}</p>
+          </div>
           <div className="header-mega-menu-grid">
             <div className="header-mega-menu-links">
               <ul className="header-mega-link-col">
@@ -343,7 +368,7 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
     <>
       {isLandingHeader ? (
         <header
-          className={`header-bar header-bar--landing sticky top-0 z-50 w-full transition duration-200 ease-in-out ${
+          className={`header-bar header-bar--landing header-bar--fixed z-50 w-full transition duration-200 ease-in-out ${
             isScrolled ? "header-bar--landing-scrolled" : ""
           }`}
           onMouseLeave={handleLandingMenuClose}
@@ -361,7 +386,8 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
                     <BrandMark size="md" />
                   </Link>
                 </div>
-                <div className="flex flex-auto justify-end">
+                <div className="flex flex-auto items-center justify-end gap-2">
+                  <ThemeToggle />
                   <button
                     type="button"
                     onClick={toggleLandingMobileMenu}
@@ -389,25 +415,67 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
                 </div>
               </div>
               {showMobileMenu && (
-                <div id="mobile-menu" className="header-landing-mobile-panel w-full border-t border-white/10 px-6 py-5">
+                <div id="mobile-menu" className="header-landing-mobile-panel w-full px-6 py-5">
                   <ul className="flex flex-col gap-1">
-                    {landingMenuItems.map((item) => (
+                    {landingMenuItems.map((item) => {
+                      const isOpen = activeLandingMenu === item.key;
+                      return (
                       <li key={item.key}>
                         <button
                           type="button"
-                          className="landing-mobile-nav-item w-full text-left py-2.5 text-sm font-medium"
+                          className={`landing-mobile-nav-item flex w-full items-center justify-between text-left py-2.5 text-sm font-medium ${isOpen ? "is-active" : ""}`}
                           onClick={() => {
-                            handleLandingMenuOpen(item.key);
-                            setShowMobileMenu(false);
+                            if (isOpen) {
+                              setActiveLandingMenu(null);
+                            } else {
+                              handleLandingMenuOpen(item.key);
+                            }
                           }}
+                          aria-expanded={isOpen}
                         >
                           {item.label}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className={`header-landing-chevron ${isOpen ? "is-open" : ""}`}
+                            aria-hidden="true"
+                          >
+                            <path d="m6 9 6 6 6-6" />
+                          </svg>
                         </button>
                       </li>
-                    ))}
+                    );
+                    })}
+                    <li>
+                      <button
+                        type="button"
+                        className="landing-mobile-nav-item flex w-full items-center justify-between text-left py-2.5 text-sm font-medium"
+                        onClick={() => {
+                          setShowMobileMenu(false);
+                          setActiveLandingMenu(null);
+                          scrollToPricing();
+                        }}
+                      >
+                        Pricing
+                      </button>
+                    </li>
                   </ul>
+
+                  {activeLandingMenuItem ? (
+                    <div className="header-mega-menu-mobile mt-3">
+                      {renderLandingMegaMenu(true)}
+                    </div>
+                  ) : null}
+
                   {showAuthButtons && (
-                    <div className="mt-5 flex flex-col gap-3 border-t border-white/10 pt-5">
+                    <div className="header-landing-mobile-divider mt-5 flex flex-col gap-3 border-t pt-5">
                       <button type="button" onClick={() => navigate("/login")} className="header-login-text text-left">
                         Log in
                       </button>
@@ -433,11 +501,22 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
                   {landingMenuItems.map((item) => (
                     <li key={item.key}>{renderLandingNavItem(item)}</li>
                   ))}
+                  <li>
+                    <button
+                      type="button"
+                      className="header-landing-nav-item header-landing-nav-item--link"
+                      onClick={scrollToPricing}
+                    >
+                      Pricing
+                    </button>
+                  </li>
                 </ul>
               </div>
 
-              {showAuthButtons && (
-                <div className="flex flex-1 justify-end gap-4">
+              <div className="flex flex-1 items-center justify-end gap-3">
+                <ThemeToggle />
+                {showAuthButtons && (
+                  <>
                   <button
                     type="button"
                     onClick={() => navigate("/login")}
@@ -449,21 +528,23 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
                   <button type="button" onClick={() => navigate("/signup")} className="header-get-started-btn">
                     Get started
                   </button>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
 
           {activeLandingMenuItem && (
             <div className="header-mega-menu-portal hidden md:block">
-              <div className="header-mega-menu-container">{renderLandingMegaMenu()}</div>
+              <div className="header-mega-menu-container">{renderLandingMegaMenu(false)}</div>
             </div>
           )}
           </div>
         </header>
       ) : (
+        <>
         <header
-          className={`header-bar header-bar--app sticky top-0 z-[100] transition-all duration-300 ${
+          className={`header-bar header-bar--app header-bar--fixed z-[100] transition-all duration-300 ${
             isScrolled ? "header-bar--app-scrolled" : "header-bar--app-top"
           }`}
         >
@@ -511,7 +592,11 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
                   <span className="header-account-trigger-name">
                     {user?.name?.split(" ")[0] || "Account"}
                   </span>
-                  <span className="header-account-trigger-avatar">
+                  <span
+                    className={`header-account-trigger-avatar${
+                      isPremium ? " header-account-trigger-avatar--premium" : ""
+                    }`}
+                  >
                     {(user?.name || "U")[0].toUpperCase()}
                     {isPremium ? (
                       <span className="header-account-trigger-premium" title="Premium">
@@ -523,8 +608,17 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
                 {showUserMenu ? (
                   <div className="header-account-menu">
                     <div className="header-account-menu-profile">
-                      <span className="header-account-menu-avatar">
+                      <span
+                        className={`header-account-menu-avatar${
+                          isPremium ? " header-account-menu-avatar--premium" : ""
+                        }`}
+                      >
                         {(user?.name || "U")[0].toUpperCase()}
+                        {isPremium ? (
+                          <span className="header-account-menu-avatar-premium" title="Premium">
+                            <i className="pi pi-star-fill" />
+                          </span>
+                        ) : null}
                       </span>
                       <div className="min-w-0">
                         <p className="header-account-menu-name">{user?.name || "User"}</p>
@@ -589,6 +683,8 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
           </div>
         </div>
       </header>
+      <div className="header-spacer header-spacer--app" aria-hidden="true" />
+      </>
       )}
 
       {!isLandingHeader && (

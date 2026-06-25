@@ -15,7 +15,8 @@ export const showNotification = (message: any, type: MessageType) => {
   toastTopCenterRef.current?.show({
     severity: type,
     detail: message,
-    life: 3000,
+    life: 3200,
+    className: `resend-toast resend-toast--${type}`,
   });
 };
 
@@ -26,7 +27,7 @@ const SNotification: React.FC = () => {
     toastTopCenterRef = toastRef;
   }, []);
 
-  return <Toast ref={toastRef} position="top-center" />;
+  return <Toast ref={toastRef} position="top-center" className="resend-toast-root" />;
 };
 
 export default SNotification;

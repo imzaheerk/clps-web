@@ -1,3 +1,5 @@
+import BrandMark from "./BrandMark";
+
 /**
  * Realistic smartphone silhouette: titanium-style frame, glass bezel,
  * OLED wallpaper, status bar, Dynamic Island, and in-screen UI — no WebGL.
@@ -74,8 +76,8 @@ export default function MobileAppPhoneMockup() {
                         <div className="flex size-5 shrink-0 items-center justify-center rounded-md bg-gradient-to-br from-primary to-cyan-500">
                           <i className="pi pi-users text-[7px] text-white" />
                         </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-[8px] font-semibold text-white/90">Checknown</p>
+                        <div className="min-w-0 scale-[0.85] origin-left">
+                          <BrandMark size="xs" showTm={false} />
                           <p className="text-[6.5px] text-white/45">Live</p>
                         </div>
                       </div>

@@ -1,11 +1,11 @@
 import { ReactNode } from "react";
-import { Header, NetworkBackground } from "@/components";
+import { Header } from "@/components";
+import AppBackground from "./AppBackground";
 
 interface PageLayoutProps {
   children: ReactNode;
   showAuthButtons?: boolean;
   maxWidth?: "sm" | "md" | "lg" | "xl" | "2xl" | "full";
-  showAnimatedBackground?: boolean;
   className?: string;
 }
 
@@ -22,33 +22,20 @@ export default function PageLayout({
   children,
   showAuthButtons = false,
   maxWidth = "lg",
-  showAnimatedBackground = true,
   className = "",
 }: PageLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-      {/* Network Background */}
-      <NetworkBackground />
+    <div className="app-resend min-h-screen flex flex-col relative overflow-hidden">
+      <AppBackground />
 
-      {/* Animated background elements */}
-      {showAnimatedBackground && (
-        <div className="fixed inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 -left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
-          <div
-            className="absolute bottom-0 -right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse"
-            style={{ animationDelay: "1s" }}
-          ></div>
-        </div>
-      )}
+      <div className="app-resend-content flex flex-col flex-1 min-h-0">
+        <Header showAuthButtons={showAuthButtons} />
 
-      {/* Header */}
-      <Header showAuthButtons={showAuthButtons} />
-
-      {/* Main Content */}
-      <div
-        className={`flex-1 ${maxWidthClasses[maxWidth]} w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-8 sm:gap-10 relative z-10 ${className}`}
-      >
-        {children}
+        <main
+          className={`flex-1 ${maxWidthClasses[maxWidth]} w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 lg:py-8 flex flex-col gap-5 sm:gap-6 ${className}`}
+        >
+          {children}
+        </main>
       </div>
     </div>
   );
