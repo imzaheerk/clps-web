@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Header, showNotification, NetworkBackground } from "@/components";
-import { announcementService } from "@/services/announcementService/announcementService";
+import { PageLayout, PageHeader, showNotification, LoadingState } from "@/components";
+import {
+  announcementService,
+  announcementCategoryLabel,
+} from "@/services/announcementService/announcementService";
 import type {
   Announcement,
   Comment,
@@ -152,17 +155,10 @@ export default function AnnouncementDetail() {
 
   if (loading || !announcement) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col">
-        <NetworkBackground />
-        <Header showAuthButtons={false} />
-        <div className="flex-1 max-w-[720px] w-full mx-auto p-4 sm:p-6 relative z-10 flex flex-col justify-center">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 w-32 rounded-lg bg-white/10" />
-            <div className="h-48 rounded-2xl bg-white/10" />
-            <div className="h-24 rounded-2xl bg-white/10" />
-          </div>
-        </div>
-      </div>
+      <PageLayout maxWidth="lg">
+        <PageHeader icon="pi pi-megaphone" title="Announcement" description="Loading post…" />
+        <LoadingState message="Loading announcement…" />
+      </PageLayout>
     );
   }
 
@@ -170,29 +166,19 @@ export default function AnnouncementDetail() {
   const dislikeCount = announcement.dislikeCount ?? 0;
   const userReaction = announcement.userReaction ?? null;
   const hasMedia = announcement.media && announcement.media.length > 0;
-  const tealActive = "bg-teal-500/25 text-teal-400 border-teal-500/50";
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-      <NetworkBackground />
-      <Header showAuthButtons={false} />
+    <PageLayout maxWidth="lg">
+      <button type="button" className="resend-btn resend-btn-secondary self-start" onClick={() => navigate("/announcements")}>
+        <i className="pi pi-arrow-left" />
+        Back
+      </button>
 
-      <div className="flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
-        {/* Back */}
-        <button
-          type="button"
-          onClick={() => navigate("/announcements")}
-          className="inline-flex items-center gap-2 text-text-secondary hover:text-primary transition-colors mb-6 text-sm font-medium"
-        >
-          <i className="pi pi-arrow-left" />
-          Back
-        </button>
-
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6 lg:gap-8">
+      <div className="app-detail-grid">
           {/* Left column: Post + Comments */}
           <div className="space-y-6 min-w-0">
             {/* Post card */}
-            <article className="rounded-2xl border border-white/10 bg-bg-primary/95 backdrop-blur-xl shadow-xl overflow-hidden">
+            <article className="app-panel app-panel--flush overflow-hidden p-0">
               {hasMedia && (
                 <div className="relative w-full aspect-video bg-bg-secondary overflow-hidden">
                   <img
@@ -204,6 +190,9 @@ export default function AnnouncementDetail() {
                 </div>
               )}
               <div className="p-6">
+                <span className={`app-announcement-category app-announcement-category--${announcement.category} mb-3 inline-flex`}>
+                  {announcementCategoryLabel(announcement.category)}
+                </span>
                 <h1 className="text-xl font-bold text-text-primary mb-2">
                   {announcement.title}
                 </h1>
@@ -240,24 +229,24 @@ export default function AnnouncementDetail() {
             </article>
 
             {/* Comments card */}
-            <section className="rounded-2xl border border-white/10 bg-bg-primary/95 backdrop-blur-xl shadow-xl overflow-hidden">
+            <section className="app-panel app-panel--flush overflow-hidden p-0">
               <div className="p-6">
                 {/* Input + Post button in one row */}
                 {user?.id && (
-                  <div className="flex gap-3 mb-6">
+                  <div className="flex flex-col sm:flex-row gap-3 mb-6">
                     <input
                       type="text"
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && handleSubmitComment()}
                       placeholder="Write a comment..."
-                      className="flex-1 min-w-0 px-4 py-3 rounded-xl border border-[color:var(--border-color)] bg-[color:var(--input-bg)] text-text-primary placeholder:text-text-tertiary text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                      className="auth-resend-input flex-1 min-w-0"
                     />
                     <button
                       type="button"
                       onClick={handleSubmitComment}
                       disabled={!newComment.trim() || submittingComment}
-                      className="px-5 py-3 rounded-xl bg-teal-500 hover:bg-teal-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold text-sm shrink-0 transition-colors flex items-center gap-2"
+                      className="resend-btn resend-btn-primary shrink-0"
                     >
                       {submittingComment ? (
                         <i className="pi pi-spin pi-spinner" />
@@ -307,19 +296,19 @@ export default function AnnouncementDetail() {
                             </button>
                           )}
                           {replyingToId === comment.id && user?.id && (
-                            <div className="mt-3 flex gap-2">
+                            <div className="mt-3 flex flex-col sm:flex-row gap-2">
                               <input
                                 type="text"
                                 value={replyText}
                                 onChange={(e) => setReplyText(e.target.value)}
                                 placeholder="Write a reply..."
-                                className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-[color:var(--border-color)] bg-[color:var(--input-bg)] text-text-primary placeholder:text-text-tertiary text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                                className="auth-resend-input flex-1 min-w-0"
                               />
                               <button
                                 type="button"
                                 onClick={() => handleSubmitReply(comment.id)}
                                 disabled={!replyText.trim() || submittingComment}
-                                className="px-3 py-2 rounded-lg bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium disabled:opacity-50 shrink-0"
+                                className="resend-btn resend-btn-primary shrink-0"
                               >
                                 {submittingComment ? <i className="pi pi-spin pi-spinner" /> : "Reply"}
                               </button>
@@ -350,7 +339,7 @@ export default function AnnouncementDetail() {
 
           {/* Right column: Reactions sidebar */}
           <aside className="lg:block">
-            <div className="rounded-2xl border border-white/10 bg-bg-primary/95 backdrop-blur-xl shadow-xl overflow-hidden sticky top-24">
+            <div className="app-panel lg:sticky lg:top-24">
               <div className="p-4 border-b border-white/10">
                 <h2 className="text-base font-bold text-text-primary">Reactions</h2>
               </div>
@@ -360,11 +349,7 @@ export default function AnnouncementDetail() {
                     <button
                       type="button"
                       onClick={() => handleReact("like")}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left border ${
-                        userReaction === "like"
-                          ? tealActive
-                          : "border-white/10 hover:bg-white/5 text-text-secondary"
-                      }`}
+                      className={`app-reaction-btn ${userReaction === "like" ? "app-reaction-btn--like" : ""}`}
                     >
                       <i className={`${userReaction === "like" ? "pi pi-thumbs-up-fill" : "pi pi-thumbs-up"} text-lg`} />
                       <span className="font-medium text-sm">Like</span>
@@ -373,11 +358,7 @@ export default function AnnouncementDetail() {
                     <button
                       type="button"
                       onClick={() => handleReact("dislike")}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-left border ${
-                        userReaction === "dislike"
-                          ? "bg-red-500/25 text-red-400 border-red-500/50"
-                          : "border-white/10 hover:bg-white/5 text-text-secondary"
-                      }`}
+                      className={`app-reaction-btn ${userReaction === "dislike" ? "app-reaction-btn--dislike" : ""}`}
                     >
                       <i className={`${userReaction === "dislike" ? "pi pi-thumbs-down-fill" : "pi pi-thumbs-down"} text-lg`} />
                       <span className="font-medium text-sm">Dislike</span>
@@ -406,8 +387,7 @@ export default function AnnouncementDetail() {
               </div>
             </div>
           </aside>
-        </div>
       </div>
-    </div>
+    </PageLayout>
   );
 }

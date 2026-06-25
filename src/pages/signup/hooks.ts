@@ -7,7 +7,8 @@ import {
 import { showNotification } from "@/components";
 
 export const useSignup = () => {
-  const [loading, setLoading] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [creatingAccount, setCreatingAccount] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sendOTP = useCallback(
@@ -19,7 +20,7 @@ export const useSignup = () => {
         return false;
       }
 
-      setLoading(true);
+      setSendingOtp(true);
       setError(null);
 
       try {
@@ -38,14 +39,14 @@ export const useSignup = () => {
         showNotification(errorMessage, "error");
         return false;
       } finally {
-        setLoading(false);
+        setSendingOtp(false);
       }
     },
     []
   );
 
   const createUserHandler = useCallback(async (data: CreateUserInput) => {
-    setLoading(true);
+    setCreatingAccount(true);
     setError(null);
 
     try {
@@ -63,7 +64,7 @@ export const useSignup = () => {
       showNotification("Invalid OTP", "error");
       return null;
     } finally {
-      setLoading(false);
+      setCreatingAccount(false);
     }
   }, []);
 
@@ -72,7 +73,9 @@ export const useSignup = () => {
   }, []);
 
   return {
-    loading,
+    sendingOtp,
+    creatingAccount,
+    loading: sendingOtp || creatingAccount,
     error,
     sendOTP,
     createUser: createUserHandler,

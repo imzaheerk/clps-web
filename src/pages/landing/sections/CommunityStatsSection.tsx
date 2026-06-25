@@ -1,74 +1,51 @@
 import ScrollReveal from "@/components/ScrollReveal";
-
-const stats = [
-  {
-    title: "Verified Local Profiles",
-    description: "Connect with real people in your area through profile-first local discovery.",
-    icon: "pi pi-users",
-  },
-  {
-    title: "Location-first Discovery",
-    description: "See people, services, and updates that are relevant to your locality.",
-    icon: "pi pi-map-marker",
-  },
-  {
-    title: "Community Messaging",
-    description: "Keep conversations and local updates organized in one place.",
-    icon: "pi pi-comments",
-  },
-  {
-    title: "Privacy by Default",
-    description: "Control your visibility and sharing preferences while building trusted connections.",
-    icon: "pi pi-shield",
-  },
-];
+import ResendFeatureBlock from "@/components/ResendFeatureBlock";
+import { ResendDualPanelShowcase } from "@/components/ResendShowcaseVariants";
 
 export default function CommunityStatsSection() {
   return (
-    <section className="relative py-10 sm:py-12 lg:py-14 overflow-hidden landing-section-perspective">
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute -top-20 -left-16 w-64 h-64 rounded-full bg-primary/10 blur-3xl animate-pulse" />
-        <div
-          className="absolute -bottom-20 -right-20 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl animate-pulse"
-          style={{ animationDelay: "900ms" }}
+    <ScrollReveal variant="blur-up">
+      <ResendFeatureBlock
+        glow="sky"
+        kicker="Trust & safety"
+        title="Built for Safe, Local Connections"
+        description="Checknown helps you discover nearby people, communicate clearly, and stay in control of your privacy."
+      >
+        <ResendDualPanelShowcase
+          leftBadge="Protected"
+          leftTarget="Your privacy settings"
+          leftTitle="What you control"
+          statusItems={[
+            { label: "Profile verification", status: "Verified", tone: "success" },
+            { label: "Nearby discovery", status: "Location-first", tone: "info" },
+            { label: "Contact details", status: "Masked", tone: "violet" },
+            { label: "Direct messages", status: "Encrypted", tone: "success" },
+          ]}
+          events={[
+            {
+              type: "delivered",
+              title: "Verified",
+              detail: "Your profile is verified and visible only within the radius you choose.",
+              time: "Today",
+              pills: ["2 km radius", "Profile active"],
+            },
+            {
+              type: "viewed",
+              title: "Reviewed",
+              detail: "Privacy controls checked — new contact requests need your approval first.",
+              time: "Today",
+              pills: ["Privacy on", "Requests filtered"],
+            },
+            {
+              type: "clicked",
+              title: "Connected",
+              detail: "You started a conversation with someone nearby in your area.",
+              time: "Today",
+              pills: ["Priya S.", "Message sent"],
+            },
+          ]}
         />
-      </div>
-      <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-3xl border border-white/15 bg-bg-primary/45 backdrop-blur-md p-5 sm:p-6 lg:p-8 shadow-2xl">
-            <div className="absolute inset-0 rounded-3xl bg-[radial-gradient(circle_at_20%_20%,rgba(14,165,233,0.12),transparent_45%),radial-gradient(circle_at_80%_80%,rgba(16,185,129,0.12),transparent_45%)] pointer-events-none" />
-            <div className="relative text-center mb-7">
-              <ScrollReveal variant="blur-up" delay={100}>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-3 bg-gradient-to-r from-primary via-cyan-500 to-emerald-500 bg-clip-text text-transparent landing-title-shine">
-                  Built for Safe, Local Connections
-                </h2>
-              </ScrollReveal>
-              <ScrollReveal variant="pop-up" delay={200}>
-                <p className="text-text-secondary text-base sm:text-lg max-w-2xl mx-auto">
-                  Checknown helps you discover nearby people, communicate clearly, and
-                  stay in control of your privacy.
-                </p>
-              </ScrollReveal>
-            </div>
-
-            <div className="relative grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-              {stats.map((stat, index) => (
-                <ScrollReveal key={stat.title} variant="flip-up" delay={150 + index * 120}>
-                  <div className="landing-card-glow group rounded-2xl bg-bg-secondary/45 border border-white/10 p-4 text-center shadow-lg transition-all duration-500 hover:-translate-y-2 hover:border-primary/40 hover:shadow-primary/20 h-full">
-                    <div className="mx-auto mb-3 w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center text-white shadow-lg transition-transform duration-500 group-hover:scale-125 group-hover:rotate-6">
-                      <i className={`${stat.icon} text-lg`} />
-                    </div>
-                    <p className="text-base sm:text-lg font-bold text-text-primary mb-1">
-                      {stat.title}
-                    </p>
-                    <p className="text-sm text-text-secondary leading-relaxed">
-                      {stat.description}
-                    </p>
-                  </div>
-                </ScrollReveal>
-              ))}
-            </div>
-          </div>
-      </div>
-    </section>
+      </ResendFeatureBlock>
+    </ScrollReveal>
   );
 }

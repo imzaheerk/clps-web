@@ -5,25 +5,17 @@ export default function ThemeToggle() {
   const isDark = theme === "dark";
 
   return (
-    <div className="theme-pill" role="group" aria-label="Theme">
-      <button
-        type="button"
-        onClick={() => isDark && toggleTheme()}
-        aria-label="Light mode"
-        aria-pressed={!isDark}
-        className={!isDark ? "active" : ""}
-      >
-        <i className="pi pi-sun text-base" />
-      </button>
-      <button
-        type="button"
-        onClick={() => !isDark && toggleTheme()}
-        aria-label="Dark mode"
-        aria-pressed={isDark}
-        className={isDark ? "active" : ""}
-      >
-        <i className="pi pi-moon text-base" />
-      </button>
-    </div>
+    <button
+      type="button"
+      onClick={toggleTheme}
+      aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
+      aria-pressed={isDark}
+      className={`theme-orb ${isDark ? "dark" : "light"}`}
+    >
+      <span className="theme-orb-glow" aria-hidden="true" />
+      <span className="theme-orb-icon" aria-hidden="true">
+        <i className={`pi ${isDark ? "pi-moon" : "pi-sun"} text-sm`} />
+      </span>
+    </button>
   );
 }

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Header, Button, showNotification, NetworkBackground } from "@/components";
+import { PageLayout, PageHeader, showNotification, LoadingState } from "@/components";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
 import { Dropdown } from "primereact/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import { businessService } from "@/services/businessService/businessService";
 import type { BusinessCategory, CreateBusinessInput } from "@/services/businessService/businessService";
+
+const inputClass = "auth-resend-input w-full";
 
 const CATEGORY_OPTIONS: { label: string; value: BusinessCategory }[] = [
   { label: "Restaurant", value: "restaurant" },
@@ -15,12 +17,26 @@ const CATEGORY_OPTIONS: { label: string; value: BusinessCategory }[] = [
   { label: "Plumber", value: "plumber" },
 ];
 
+const CATEGORY_LABELS: Record<string, string> = {
+  restaurant: "Restaurant",
+  shop: "Shop",
+  driver: "Driver",
+  plumber: "Plumber",
+};
+
 const BUSINESS_HOURS_OPTIONS: { label: string; value: string }[] = [
   { label: "24/7", value: "24/7" },
   { label: "Mon-Sat", value: "Mon-Sat" },
   { label: "9 AM - 6 PM", value: "9 AM - 6 PM" },
   { label: "Mon-Fri 9 AM - 6 PM", value: "Mon-Fri 9 AM - 6 PM" },
   { label: "Sat 9 AM - 2 PM", value: "Sat 9 AM - 2 PM" },
+];
+
+const composeTips = [
+  "Choose the category that best matches what you offer.",
+  "Add a clear description so people know your services at a glance.",
+  "Use Get location to auto-fill address and map coordinates.",
+  "Business hours help customers know when you're available.",
 ];
 
 export default function BusinessForm() {
@@ -59,19 +75,19 @@ export default function BusinessForm() {
           setLatitude(b.latitude != null ? String(b.latitude) : "");
           setLongitude(b.longitude != null ? String(b.longitude) : "");
           if (b.businessHours) {
-            const disp = (b.businessHours as { display?: string }).display
-              || (b.businessHours as { general?: string }).general
-              || Object.entries(b.businessHours).map(([k, v]) => `${k}: ${v}`).join(", ");
+            const disp =
+              (b.businessHours as { display?: string }).display ||
+              (b.businessHours as { general?: string }).general ||
+              Object.entries(b.businessHours)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(", ");
             setBusinessHoursPreset(disp || "");
           }
           setWebsite(b.website || "");
           setFacebook(b.socialLinks?.facebook || "");
           setInstagram(b.socialLinks?.instagram || "");
         } catch (e: any) {
-          showNotification(
-            e.response?.data?.error || "Failed to load business",
-            "error"
-          );
+          showNotification(e.response?.data?.error || "Failed to load business", "error");
           navigate("/business");
         } finally {
           setLoadingData(false);
@@ -144,9 +160,9 @@ export default function BusinessForm() {
     if (!user) return;
     setLoading(true);
     try {
-    const payload = buildPayload();
-    if (isEdit && id) {
-      await businessService.updateBusiness(Number(id), payload);
+      const payload = buildPayload();
+      if (isEdit && id) {
+        await businessService.updateBusiness(Number(id), payload);
         showNotification("Business updated", "success");
       } else {
         await businessService.createBusiness(payload);
@@ -163,217 +179,316 @@ export default function BusinessForm() {
     }
   };
 
+  const previewCategory = category ? CATEGORY_LABELS[category] || category : null;
+
   if (loadingData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-        <NetworkBackground />
-        <Header showAuthButtons={false} />
-        <div className="flex-1 flex items-center justify-center relative z-10">
-          <i className="pi pi-spin pi-spinner text-5xl text-primary"></i>
-        </div>
-      </div>
+      <PageLayout maxWidth="lg">
+        <LoadingState message="Loading business…" />
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-      <NetworkBackground />
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div
-          className="absolute bottom-0 -right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "1s" }}
-        ></div>
-      </div>
+    <PageLayout maxWidth="lg">
+      <button
+        type="button"
+        className="resend-btn resend-btn-secondary self-start"
+        onClick={() => navigate("/business")}
+      >
+        <i className="pi pi-arrow-left" />
+        Back to businesses
+      </button>
 
-      <Header showAuthButtons={false} />
+      <PageHeader
+        icon={isEdit ? "pi pi-pencil" : "pi pi-briefcase"}
+        title={isEdit ? "Edit business" : "Add business"}
+        description={
+          isEdit
+            ? "Update your listing so customers see accurate details."
+            : "Create a listing with category, location, hours, and links."
+        }
+      />
 
-      <div className="flex-1 max-w-[900px] w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-8 relative z-10">
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan-500 to-emerald-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-          <div className="relative backdrop-blur-xl bg-bg-primary/60 rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
-            <div className="relative flex items-center gap-4">
-              <button
-                onClick={() => navigate("/business")}
-                className="p-3 hover:bg-primary/10 rounded-xl transition-all flex-shrink-0"
-                title="Back"
-              >
-                <i className="pi pi-arrow-left text-text-primary text-xl"></i>
-              </button>
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-black text-text-primary bg-gradient-to-r from-primary via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
-                  {isEdit ? "Edit Business" : "Add Business"}
-                </h1>
-                <p className="text-text-secondary text-sm">
-                  {isEdit
-                    ? "Update your business details"
-                    : "Service, category, location, hours and verification"}
-                </p>
-              </div>
-            </div>
+      <div className="app-compose-layout">
+        <form onSubmit={handleSubmit} className="app-panel app-compose-form">
+          <div className="app-panel-head">
+            <h2 className="app-panel-title">
+              <i className="pi pi-file-edit" />
+              {isEdit ? "Listing details" : "Business details"}
+            </h2>
+            <p className="app-panel-copy">
+              {isEdit
+                ? "Changes are saved to your public listing immediately."
+                : "Required fields are marked with an asterisk."}
+            </p>
           </div>
-        </div>
 
-        <form onSubmit={handleSubmit} className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="relative backdrop-blur-xl bg-bg-primary/70 rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              <div className="sm:col-span-2">
-                <label className="block text-sm font-bold text-text-primary mb-2">
-                  Business name <span className="text-red-500">*</span>
+          <fieldset className="app-compose-fieldset">
+            <legend className="app-compose-fieldset-title">
+              <i className="pi pi-building" />
+              Basics
+            </legend>
+            <div className="app-form-stack">
+              <div className="app-form-grid">
+                <div className="sm:col-span-2">
+                  <label className="app-form-label" htmlFor="biz-name">
+                    Business name <span className="text-red-400">*</span>
+                  </label>
+                  <InputText
+                    id="biz-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Sunrise Café"
+                    className={inputClass}
+                    maxLength={200}
+                  />
+                  <p className="app-form-hint">{name.length}/200 characters</p>
+                </div>
+                <div>
+                  <label className="app-form-label" htmlFor="biz-category">
+                    Category <span className="text-red-400">*</span>
+                  </label>
+                  <Dropdown
+                    inputId="biz-category"
+                    value={category}
+                    options={CATEGORY_OPTIONS}
+                    onChange={(e) => setCategory(e.value)}
+                    placeholder="Select category"
+                    className="w-full"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="app-form-label" htmlFor="biz-desc">
+                  Description
                 </label>
-                <InputText
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. My Restaurant"
-                  className="w-full px-4 py-3 bg-bg-secondary/50 border border-white/10 rounded-xl"
-                  maxLength={200}
+                <InputTextarea
+                  id="biz-desc"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="What do you offer? Services, specialties, or anything customers should know…"
+                  className={`${inputClass} min-h-[7rem] resize-y`}
+                  rows={5}
                 />
               </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="app-compose-fieldset">
+            <legend className="app-compose-fieldset-title">
+              <i className="pi pi-map-marker" />
+              Location
+            </legend>
+            <div className="app-form-stack">
               <div>
-                <label className="block text-sm font-bold text-text-primary mb-2">
-                  Category <span className="text-red-500">*</span>
+                <label className="app-form-label" htmlFor="biz-address">
+                  Address
+                </label>
+                <div className="app-input-with-action">
+                  <InputText
+                    id="biz-address"
+                    value={address}
+                    onChange={(e) => setAddress(e.target.value)}
+                    placeholder="Street, city, pincode"
+                    className={inputClass}
+                    maxLength={500}
+                  />
+                  <button
+                    type="button"
+                    className="resend-btn resend-btn-secondary app-input-action-btn"
+                    onClick={handleGetLocation}
+                    disabled={gettingLocation}
+                  >
+                    {gettingLocation ? (
+                      <>
+                        <i className="pi pi-spin pi-spinner" />
+                        Locating…
+                      </>
+                    ) : (
+                      <>
+                        <i className="pi pi-map-marker" />
+                        Get location
+                      </>
+                    )}
+                  </button>
+                </div>
+                {(latitude || longitude) && (
+                  <p className="app-form-hint">
+                    Coordinates: {latitude || "—"}, {longitude || "—"}
+                  </p>
+                )}
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset className="app-compose-fieldset">
+            <legend className="app-compose-fieldset-title">
+              <i className="pi pi-globe" />
+              Hours &amp; online
+            </legend>
+            <div className="app-form-stack">
+              <div>
+                <label className="app-form-label" htmlFor="biz-hours">
+                  Business hours
                 </label>
                 <Dropdown
-                  value={category}
-                  options={CATEGORY_OPTIONS}
-                  onChange={(e) => setCategory(e.value)}
-                  placeholder="Select category"
+                  inputId="biz-hours"
+                  value={businessHoursPreset}
+                  options={BUSINESS_HOURS_OPTIONS}
+                  onChange={(e) => setBusinessHoursPreset(e.value ?? "")}
+                  placeholder="e.g. 24/7, Mon–Sat, 9 AM – 6 PM"
                   className="w-full"
                 />
               </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-text-primary mb-2">
-                Description (optional)
-              </label>
-              <InputTextarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe your business and services..."
-                className="w-full px-4 py-3 bg-bg-secondary/50 border border-white/10 rounded-xl resize-none"
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-text-primary mb-2">
-                Address
-              </label>
-              <div className="flex gap-2">
+              <div>
+                <label className="app-form-label" htmlFor="biz-website">
+                  Website
+                </label>
                 <InputText
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Street, city, pincode"
-                  className="flex-1 px-4 py-3 bg-bg-secondary/50 border border-white/10 rounded-xl"
+                  id="biz-website"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://yourbusiness.com"
+                  className={inputClass}
                   maxLength={500}
                 />
-                <Button
-                  type="button"
-                  label={gettingLocation ? "..." : "Get location"}
-                  icon={gettingLocation ? "pi pi-spin pi-spinner" : "pi pi-map-marker"}
-                  onClick={handleGetLocation}
-                  disabled={gettingLocation}
-                  variant="outlined"
-                  Size="medium"
-                />
               </div>
-              {(latitude || longitude) && (
-                <p className="text-text-tertiary text-sm mt-2">
-                  Lat: {latitude || "—"} · Long: {longitude || "—"}
-                </p>
+              <div className="app-form-grid">
+                <div>
+                  <label className="app-form-label" htmlFor="biz-facebook">
+                    Facebook
+                  </label>
+                  <InputText
+                    id="biz-facebook"
+                    value={facebook}
+                    onChange={(e) => setFacebook(e.target.value)}
+                    placeholder="https://facebook.com/…"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="app-form-label" htmlFor="biz-instagram">
+                    Instagram
+                  </label>
+                  <InputText
+                    id="biz-instagram"
+                    value={instagram}
+                    onChange={(e) => setInstagram(e.target.value)}
+                    placeholder="https://instagram.com/…"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </div>
+          </fieldset>
+
+          {isEdit && (
+            <div className="app-compose-notice">
+              <i className="pi pi-shield" />
+              <p>
+                <strong>Verification:</strong> Aadhar and licence verification are set by admin after
+                reviewing your documents. You cannot change them here.
+              </p>
+            </div>
+          )}
+
+          <div className="app-action-row border-t border-white/10 pt-5 mt-2">
+            <button
+              type="submit"
+              className="resend-btn resend-btn-primary flex-1 sm:flex-none"
+              disabled={loading || !name.trim() || !category}
+            >
+              {loading ? (
+                <>
+                  <i className="pi pi-spin pi-spinner" />
+                  {isEdit ? "Saving…" : "Creating…"}
+                </>
+              ) : (
+                <>
+                  <i className={isEdit ? "pi pi-check" : "pi pi-plus"} />
+                  {isEdit ? "Save changes" : "Create business"}
+                </>
               )}
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-text-primary mb-2">
-                Business hours
-              </label>
-              <Dropdown
-                value={businessHoursPreset}
-                options={BUSINESS_HOURS_OPTIONS}
-                onChange={(e) => setBusinessHoursPreset(e.value ?? "")}
-                placeholder="e.g. 24/7, Mon-Sat, 9 AM - 6 PM"
-                className="w-full"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-bold text-text-primary mb-2">
-                Website
-              </label>
-              <InputText
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-                placeholder="https://..."
-                className="w-full px-4 py-3 bg-bg-secondary/50 border border-white/10 rounded-xl"
-                maxLength={500}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-bold text-text-primary mb-2">
-                  Facebook URL
-                </label>
-                <InputText
-                  value={facebook}
-                  onChange={(e) => setFacebook(e.target.value)}
-                  placeholder="https://facebook.com/..."
-                  className="w-full px-4 py-3 bg-bg-secondary/50 border border-white/10 rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-text-primary mb-2">
-                  Instagram URL
-                </label>
-                <InputText
-                  value={instagram}
-                  onChange={(e) => setInstagram(e.target.value)}
-                  placeholder="https://instagram.com/..."
-                  className="w-full px-4 py-3 bg-bg-secondary/50 border border-white/10 rounded-xl"
-                />
-              </div>
-            </div>
-
-            {isEdit && (
-              <div className="p-4 bg-bg-secondary/50 rounded-xl border border-white/10">
-                <p className="text-sm text-text-secondary">
-                  <strong className="text-text-primary">Verification:</strong> Aadhar and licence
-                  verification are set by admin after checking your documents. You cannot change them here.
-                </p>
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-4 pt-4">
-              <Button
-                type="submit"
-                label={
-                  loading
-                    ? isEdit
-                      ? "Updating..."
-                      : "Creating..."
-                    : isEdit
-                    ? "Update Business"
-                    : "Add Business"
-                }
-                icon={loading ? "pi pi-spin pi-spinner" : "pi pi-check"}
-                disabled={loading || !name.trim() || !category}
-                variant="gradient"
-                Size="medium"
-              />
-              <Button
-                type="button"
-                label="Cancel"
-                onClick={() => navigate("/business")}
-                variant="outlined"
-                Size="medium"
-              />
-            </div>
+            </button>
+            <button
+              type="button"
+              className="resend-btn resend-btn-secondary flex-1 sm:flex-none"
+              onClick={() => navigate("/business")}
+              disabled={loading}
+            >
+              Cancel
+            </button>
           </div>
         </form>
+
+        <aside className="app-compose-aside">
+          <section className="app-panel">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-lightbulb" />
+                Listing tips
+              </h2>
+            </div>
+            <ul className="app-tip-list-bullets">
+              {composeTips.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="app-panel app-compose-preview">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-eye" />
+                Preview
+              </h2>
+              <p className="app-panel-copy">How your listing may appear in search</p>
+            </div>
+            <article className="app-list-card app-compose-preview-card app-compose-preview-list-card">
+              <div className="app-list-card-main">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h3 className="app-list-card-title">{name.trim() || "Your business name"}</h3>
+                  {previewCategory ? (
+                    <span className="resend-pill">{previewCategory}</span>
+                  ) : (
+                    <span className="resend-pill resend-pill--muted">Category</span>
+                  )}
+                </div>
+                <p className="app-list-card-desc">
+                  {description.trim() || "Your description will appear here as you type…"}
+                </p>
+                {address.trim() ? (
+                  <p className="app-list-card-meta">
+                    <i className="pi pi-map-marker" />
+                    {address}
+                  </p>
+                ) : (
+                  <p className="app-list-card-meta app-list-card-meta--muted">
+                    <i className="pi pi-map-marker" />
+                    Add an address to show on the map
+                  </p>
+                )}
+                {businessHoursPreset ? (
+                  <p className="app-list-card-meta">
+                    <i className="pi pi-clock" />
+                    {businessHoursPreset}
+                  </p>
+                ) : null}
+              </div>
+            </article>
+          </section>
+
+          {!isEdit && (
+            <section className="app-panel app-panel--compact">
+              <p className="app-panel-stat m-0">
+                <i className="pi pi-check-circle text-[#ff6000]" />
+                Listings appear in local business search once published.
+              </p>
+            </section>
+          )}
+        </aside>
       </div>
-    </div>
+    </PageLayout>
   );
 }

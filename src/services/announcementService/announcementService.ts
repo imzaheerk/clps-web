@@ -1,11 +1,34 @@
 import { axiosInstance } from "../axiosInstance/axiosInstance";
 
+export type AnnouncementCategory =
+  | "general"
+  | "events"
+  | "safety"
+  | "jobs"
+  | "lost_found";
+
+export const ANNOUNCEMENT_CATEGORIES: {
+  value: AnnouncementCategory;
+  label: string;
+}[] = [
+  { value: "general", label: "General" },
+  { value: "events", label: "Events" },
+  { value: "safety", label: "Safety" },
+  { value: "jobs", label: "Jobs" },
+  { value: "lost_found", label: "Lost & Found" },
+];
+
+export function announcementCategoryLabel(category: string) {
+  return ANNOUNCEMENT_CATEGORIES.find((c) => c.value === category)?.label ?? category;
+}
+
 export type ReactionType = "like" | "dislike";
 
 export interface Announcement {
   id: number;
   userId: number;
   title: string;
+  category: AnnouncementCategory;
   description: string;
   pincode: string;
   contactInfo: string | null;
@@ -32,19 +55,27 @@ export interface AnnouncementQuery {
   limit?: number;
   offset?: number;
   currentUserId?: number;
+  category?: AnnouncementCategory;
   /** When true, refetch in background without showing full loading state (client-only, not sent to API) */
   silent?: boolean;
+}
+
+export interface AnnouncementCategoryStats {
+  counts: Record<AnnouncementCategory, number>;
+  total: number;
 }
 
 export interface CreateAnnouncementInput {
   title: string;
   description: string;
+  category?: AnnouncementCategory;
   media?: string[]; // Optional array of image URLs
 }
 
 export interface UpdateAnnouncementInput {
   title?: string;
   description?: string;
+  category?: AnnouncementCategory;
   media?: string[]; // Optional array of image URLs
   isActive?: boolean;
 }
@@ -86,6 +117,7 @@ export const announcementService = {
     if (query?.offset) params.append("offset", query.offset.toString());
     if (query?.currentUserId != null)
       params.append("currentUserId", query.currentUserId.toString());
+    if (query?.category) params.append("category", query.category);
 
     const response = await axiosInstance.get<AnnouncementListResponse>(
       `/announcements/pincode/${pincode}?${params.toString()}`
@@ -102,6 +134,7 @@ export const announcementService = {
     if (query?.offset) params.append("offset", query.offset.toString());
     if (query?.currentUserId != null)
       params.append("currentUserId", query.currentUserId.toString());
+    if (query?.category) params.append("category", query.category);
 
     const response = await axiosInstance.get<AnnouncementListResponse>(
       `/announcements/user/${userId}?${params.toString()}`
@@ -213,6 +246,13 @@ export const announcementService = {
   ): Promise<{ message: string }> {
     const response = await axiosInstance.delete<{ message: string }>(
       `/announcements/${id}/user/${userId}`
+    );
+    return response.data;
+  },
+
+  async getCategoryStatsByPincode(pincode: string): Promise<AnnouncementCategoryStats> {
+    const response = await axiosInstance.get<AnnouncementCategoryStats>(
+      `/announcements/pincode/${encodeURIComponent(pincode)}/category-stats`
     );
     return response.data;
   },

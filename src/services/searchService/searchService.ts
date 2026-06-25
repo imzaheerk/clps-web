@@ -1,10 +1,12 @@
 import { axiosInstance } from "../axiosInstance/axiosInstance";
 import { UserOutput } from "@/types";
+import type { DiscoveryRadiusKm } from "@/constants/discoveryRadius";
 
 export interface SearchInput {
   name?: string;
   mobileNumber?: string;
   limit?: number;
+  discoveryRadiusKm?: DiscoveryRadiusKm;
 }
 
 export interface SearchResult extends UserOutput {
@@ -20,14 +22,15 @@ export const searchService = {
     return response.data;
   },
 
-  async searchByName(name: string, limit?: number): Promise<SearchResult[]> {
-    return this.search({ name, limit });
+  async searchByName(name: string, limit?: number, discoveryRadiusKm?: DiscoveryRadiusKm): Promise<SearchResult[]> {
+    return this.search({ name, limit, discoveryRadiusKm });
   },
 
   async searchByMobile(
     mobileNumber: string,
-    limit?: number
+    limit?: number,
+    discoveryRadiusKm?: DiscoveryRadiusKm
   ): Promise<SearchResult[]> {
-    return this.search({ mobileNumber, limit });
+    return this.search({ mobileNumber, limit, discoveryRadiusKm });
   },
 };

@@ -1,0 +1,84 @@
+/* Smooth theme switching — View Transitions API + CSS fallback */
+
+:root {
+  --theme-transition-duration: 0.45s;
+  --theme-transition-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --theme-canvas-fade-duration: 0.34s;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--theme-transition-duration);
+  animation-timing-function: var(--theme-transition-ease);
+}
+
+html.theme-transition,
+html.theme-transition body {
+  transition:
+    background-color var(--theme-transition-duration) var(--theme-transition-ease),
+    color var(--theme-transition-duration) var(--theme-transition-ease);
+}
+
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition-property:
+    background-color,
+    color,
+    border-color,
+    box-shadow,
+    fill,
+    stroke,
+    outline-color,
+    text-decoration-color !important;
+  transition-duration: var(--theme-transition-duration) !important;
+  transition-timing-function: var(--theme-transition-ease) !important;
+}
+
+html.theme-transition .landing-hero-globe-gradient,
+html.theme-transition .landing-hero-globe-vignette,
+html.theme-transition .cta-connect-visual {
+  transition-property: background, opacity, border-color, box-shadow !important;
+  transition-duration: var(--theme-transition-duration) !important;
+  transition-timing-function: var(--theme-transition-ease) !important;
+}
+
+.hero-globe-canvas,
+.cta-network-canvas,
+.hero-network-canvas,
+.cta-city-canvas {
+  transition: opacity var(--theme-canvas-fade-duration) var(--theme-transition-ease);
+}
+
+.hero-globe-canvas canvas,
+.cta-network-canvas canvas,
+.hero-network-canvas canvas,
+.cta-city-canvas canvas {
+  transition: filter var(--theme-transition-duration) var(--theme-transition-ease);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0.01ms;
+  }
+
+  html.theme-transition,
+  html.theme-transition *,
+  html.theme-transition *::before,
+  html.theme-transition *::after {
+    transition-duration: 0.01ms !important;
+  }
+
+  .hero-globe-canvas,
+  .cta-network-canvas,
+  .hero-network-canvas,
+  .cta-city-canvas,
+  .hero-globe-canvas canvas,
+  .cta-network-canvas canvas,
+  .hero-network-canvas canvas,
+  .cta-city-canvas canvas {
+    transition-duration: 0.01ms;
+  }
+}

@@ -9,6 +9,7 @@ export interface UserOutput {
   pincode: string | null;
   area: string | null;
   isActive?: boolean;
+  discoveryRadiusKm?: number;
   createdAt: string;
   updatedAt: string;
   token?: string; // JWT token (only returned on login/signup)

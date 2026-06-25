@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Header, showNotification, Button, NetworkBackground } from "@/components";
+import { PageLayout, showNotification, Button, LoadingState, EmptyState, ChatSafetyMenu } from "@/components";
 import { profileService } from "@/services/profileService/profileService";
 import { ChatRequest, Conversation, messagingService } from "@/services/messagingService/messagingService";
 import { UserOutput } from "@/types";
 import { useAuth } from "@/contexts/AuthContext";
 import { numberRevealService } from "@/services/numberRevealService/numberRevealService";
+import type { BlockStatus } from "@/services/chatSafetyService/chatSafetyService";
 
 export default function ProfileView() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +22,7 @@ export default function ProfileView() {
   const hasLoadedRef = useRef(false);
   const [numberRevealStatus, setNumberRevealStatus] = useState<"none" | "pending" | "accepted" | "rejected">("none");
   const [requestingNumberReveal, setRequestingNumberReveal] = useState(false);
+  const [blockStatus, setBlockStatus] = useState<BlockStatus | null>(null);
 
   const loadChatStatus = useCallback(async () => {
     if (!user?.id || !profile?.id || user.id === profile.id) return;
@@ -30,6 +32,7 @@ export default function ProfileView() {
       const status = await messagingService.checkChatStatus(profile.id);
       setChatRequest(status.chatRequest);
       setConversation(status.conversation);
+      setBlockStatus(status.blockStatus);
     } catch (error) {
       // Silently fail - chat status is not critical
       console.error("Failed to load chat status:", error);
@@ -83,101 +86,60 @@ export default function ProfileView() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-        {/* Network Background - Global Internet Network Visualization */}
-        <NetworkBackground />
-        
-        <Header showAuthButtons={false} />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <i className="pi pi-spin pi-spinner text-5xl text-primary mb-4 block"></i>
-            <p className="text-text-secondary">Loading profile...</p>
-          </div>
-        </div>
-      </div>
+      <PageLayout maxWidth="md">
+        <LoadingState message="Loading profile…" />
+      </PageLayout>
     );
   }
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-        {/* Network Background - Global Internet Network Visualization */}
-        <NetworkBackground />
-        
-        <Header showAuthButtons={false} />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md mx-auto p-8">
-            <div className="w-24 h-24 bg-bg-primary rounded-full flex items-center justify-center mx-auto mb-6 border-4 border-white/20">
-              <i className="pi pi-user text-4xl text-text-tertiary"></i>
-            </div>
-            <h3 className="text-2xl font-bold text-text-primary mb-3">
-              Profile not found
-            </h3>
-            <p className="text-text-secondary mb-6">
-              The profile you're looking for doesn't exist or has been removed.
-            </p>
-            <Button
-              label="Go Back"
-              icon="pi pi-arrow-left"
-              onClick={() => navigate(-1)}
-              variant="gradient"
-              Size="large"
-            />
-          </div>
-        </div>
-      </div>
+      <PageLayout maxWidth="md">
+        <EmptyState
+          icon="pi pi-user"
+          title="Profile not found"
+          description="This profile doesn't exist or was removed."
+          action={{ label: "Go back", onClick: () => navigate(-1), icon: "pi pi-arrow-left" }}
+        />
+      </PageLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-      {/* Network Background - Global Internet Network Visualization */}
-      <NetworkBackground />
-      
-      {/* Animated background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 -right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      </div>
+    <PageLayout maxWidth="md">
+      <button type="button" className="resend-btn resend-btn-secondary self-start" onClick={() => navigate(-1)}>
+        <i className="pi pi-arrow-left" />
+        Back
+      </button>
 
-      <Header showAuthButtons={false} />
-
-      <div className="flex-1 max-w-[1000px] w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 sm:gap-8 relative z-10">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-text-secondary hover:text-primary transition-all duration-300 self-start group px-4 py-2 rounded-xl hover:bg-bg-primary/50"
-        >
-          <i className="pi pi-arrow-left group-hover:-translate-x-1 transition-transform"></i>
-          <span className="font-medium">Back</span>
-        </button>
-
-        {/* Profile Header Card */}
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan-500 to-emerald-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-          <div className="relative backdrop-blur-xl bg-bg-primary/70 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-cyan-500/10 to-emerald-500/10 opacity-50"></div>
-            <div className="relative p-8 sm:p-10 lg:p-12">
-              <div className="flex flex-col items-center text-center">
-                {/* Avatar */}
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary via-cyan-600 to-cyan-600 rounded-full blur-2xl opacity-50 animate-pulse"></div>
-                  <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center shadow-2xl border-4 border-white/20">
-                    <span className="text-white font-black text-5xl">
-                      {(profile.name || "U")[0].toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Name */}
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-text-primary mb-3 bg-gradient-to-r from-primary via-cyan-600 to-cyan-600 bg-clip-text text-transparent">
-                  {profile.name || "Unknown"}
-                </h1>
-                
-                {/* Chat Request Button */}
+      <section className="app-panel text-center">
+        <div className="app-profile-view-head">
+          <span className="app-profile-avatar app-profile-avatar--xl mx-auto mb-4">
+            {(profile.name || "U")[0].toUpperCase()}
+          </span>
+          {user?.id && profile.id && user.id !== profile.id ? (
+            <ChatSafetyMenu
+              otherUserId={profile.id}
+              otherUserName={profile.name}
+              blockStatus={blockStatus}
+              onBlockStatusChange={setBlockStatus}
+              className="app-profile-safety-menu"
+            />
+          ) : null}
+        </div>
+        <h1 className="app-dash-hero-title mb-4">{profile.name || "Unknown"}</h1>
                 {user?.id && profile.id && user.id !== profile.id && (
-                  <div className="mt-6 flex flex-col items-center gap-2">
-                    {conversation || chatRequest?.status === "accepted" ? (
+                  <div className="mt-6 flex flex-col items-center gap-3 w-full max-w-sm mx-auto">
+                    {blockStatus?.isBlocked ? (
+                      <div className="app-safety-banner w-full">
+                        <i className="pi pi-shield" />
+                        <span>
+                          {blockStatus.blockedByMe
+                            ? "You've blocked this user. Unblock them from the menu to connect again."
+                            : "You can't contact this user."}
+                        </span>
+                      </div>
+                    ) : conversation || chatRequest?.status === "accepted" ? (
                       <Button
                         label="Connect"
                         icon="pi pi-comments"
@@ -230,61 +192,62 @@ export default function ProfileView() {
                           variant="secondary"
                           Size="large"
                         />
-                        <p className="text-text-secondary text-sm text-center max-w-xs">
+                        <p className="text-text-secondary text-sm text-center">
                           Request sent. They haven&apos;t accepted yet. You can withdraw and send again tomorrow.
                         </p>
                       </>
                     ) : chatRequest?.status === "pending" ? (
-                      <div className="flex items-center gap-3 px-8 py-4 bg-bg-secondary/80 backdrop-blur-sm border-2 border-warning/30 rounded-2xl">
-                        <i className="pi pi-clock text-warning text-xl"></i>
-                        <span className="text-warning font-semibold text-lg">Request Pending</span>
+                      <div className="app-status-banner app-status-banner--warning w-full">
+                        <i className="pi pi-clock" />
+                        <span>Request pending</span>
                       </div>
                     ) : chatRequest?.status === "withdrawn" && chatRequest.senderId === user.id ? (
-                      <div className="flex flex-col items-center gap-2">
-                        <div className="flex items-center gap-3 px-6 py-4 bg-bg-secondary/80 backdrop-blur-sm border-2 border-primary/30 rounded-2xl">
-                          <i className="pi pi-info-circle text-primary text-xl"></i>
-                          <span className="text-text-primary font-semibold">Once withdrawn, you can send again by tomorrow.</span>
+                      <div className="flex flex-col items-center gap-2 w-full">
+                        <div className="app-status-banner app-status-banner--info w-full">
+                          <i className="pi pi-info-circle" />
+                          <span>Once withdrawn, you can send again tomorrow.</span>
                         </div>
-                        <p className="text-text-secondary text-sm text-center max-w-xs">
+                        <p className="text-text-secondary text-sm text-center">
                           Send chat request will be available again tomorrow.
                         </p>
                       </div>
                     ) : (
-                      <>
-                        <Button
-                          label={sendingRequest ? "Sending..." : "Send chat request"}
-                          icon={sendingRequest ? "pi pi-spin pi-spinner" : "pi pi-user-plus"}
-                          onClick={async () => {
-                            if (!profile?.id || sendingRequest) return;
-                            try {
-                              setSendingRequest(true);
-                              await messagingService.sendChatRequest({ receiverId: profile.id });
+                      <Button
+                        label={sendingRequest ? "Sending..." : "Send chat request"}
+                        icon={sendingRequest ? "pi pi-spin pi-spinner" : "pi pi-user-plus"}
+                        onClick={async () => {
+                          if (!profile?.id || sendingRequest) return;
+                          try {
+                            setSendingRequest(true);
+                            await messagingService.sendChatRequest({ receiverId: profile.id });
+                            await loadChatStatus();
+                            showNotification("Chat request sent", "success");
+                          } catch (error: any) {
+                            const msg = error.response?.data?.message || error.response?.data?.error || "";
+                            if (error.response?.status === 400 && /already accepted|already connected/i.test(msg)) {
                               await loadChatStatus();
-                              showNotification("Chat request sent", "success");
-                            } catch (error: any) {
-                              const msg = error.response?.data?.message || error.response?.data?.error || "";
-                              if (error.response?.status === 400 && /already accepted|already connected/i.test(msg)) {
-                                await loadChatStatus();
-                                showNotification("You're already connected", "success");
-                              } else {
-                                showNotification(msg || "Failed to send chat request", "error");
-                              }
-                            } finally {
-                              setSendingRequest(false);
+                              showNotification("You're already connected", "success");
+                            } else {
+                              showNotification(msg || "Failed to send chat request", "error");
                             }
-                          }}
-                          disabled={sendingRequest || loadingChatStatus}
-                          variant="gradient"
-                          Size="large"
-                        />
-                      </>
+                          } finally {
+                            setSendingRequest(false);
+                          }
+                        }}
+                        disabled={sendingRequest || loadingChatStatus}
+                        variant="gradient"
+                        Size="large"
+                      />
                     )}
+                    {!blockStatus?.isBlocked ? (
+                      <p className="app-safety-reminder-inline m-0">
+                        <i className="pi pi-eye-slash" />
+                        Only share your number when you trust someone — use number reveal for privacy.
+                      </p>
+                    ) : null}
                   </div>
                 )}
-              </div>
-            </div>
-          </div>
-        </div>
+      </section>
 
         {/* Contact Information Card - show when own profile, fully_visible, or accepted reveal (full number) */}
         {(() => {
@@ -304,145 +267,92 @@ export default function ProfileView() {
           if (isMaskedNoPermission) {
             const canAskAgain = numberRevealStatus === "none" || numberRevealStatus === "accepted";
             return (
-              <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative backdrop-blur-xl bg-bg-primary/70 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-cyan-500/5 to-cyan-500/5 opacity-50"></div>
-                  <div className="relative p-6 sm:p-8 lg:p-10">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div className="p-3 bg-gradient-to-br from-primary to-cyan-600 rounded-2xl shadow-lg">
-                        <i className="pi pi-phone text-white text-xl"></i>
-                      </div>
-                      <h2 className="text-2xl sm:text-3xl font-black text-text-primary bg-gradient-to-r from-primary to-cyan-600 bg-clip-text text-transparent">
-                        Contact Information
-                      </h2>
-                    </div>
-                    <div className="p-6 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl border border-white/10">
-                      {numberRevealStatus === "pending" ? (
-                        <div className="flex items-center gap-3 py-2">
-                          <i className="pi pi-clock text-warning text-xl"></i>
-                          <span className="text-warning font-semibold">Request sent. Waiting for approval.</span>
-                        </div>
-                      ) : canAskAgain ? (
-                        <Button
-                          label={
-                            numberRevealStatus === "accepted"
-                              ? "Ask again to see number"
-                              : "Request to see number"
-                          }
-                          icon={requestingNumberReveal ? "pi pi-spin pi-spinner" : "pi pi-eye"}
-                          onClick={async () => {
-                            if (!profile?.id || requestingNumberReveal) return;
-                            try {
-                              setRequestingNumberReveal(true);
-                              await numberRevealService.requestNumberReveal(profile.id);
-                              setNumberRevealStatus("pending");
-                              showNotification("Request sent. They can allow permanently or reject.", "success");
-                            } catch (error: any) {
-                              showNotification(
-                                error.response?.data?.message || "Failed to send request",
-                                "error"
-                              );
-                            } finally {
-                              setRequestingNumberReveal(false);
-                            }
-                          }}
-                          disabled={requestingNumberReveal}
-                          variant="gradient"
-                          Size="large"
-                        />
-                      ) : null}
-                    </div>
-                  </div>
+              <section className="app-panel">
+                <div className="app-panel-head">
+                  <h2 className="app-panel-title">
+                    <i className="pi pi-phone" />
+                    Contact information
+                  </h2>
+                  <p className="app-panel-copy">This number is hidden until they approve your request.</p>
                 </div>
-              </div>
+                {numberRevealStatus === "pending" ? (
+                  <div className="app-status-banner app-status-banner--warning">
+                    <i className="pi pi-clock" />
+                    <span>Request sent. Waiting for approval.</span>
+                  </div>
+                ) : canAskAgain ? (
+                  <Button
+                    label={
+                      numberRevealStatus === "accepted"
+                        ? "Ask again to see number"
+                        : "Request to see number"
+                    }
+                    icon={requestingNumberReveal ? "pi pi-spin pi-spinner" : "pi pi-eye"}
+                    onClick={async () => {
+                      if (!profile?.id || requestingNumberReveal) return;
+                      try {
+                        setRequestingNumberReveal(true);
+                        await numberRevealService.requestNumberReveal(profile.id);
+                        setNumberRevealStatus("pending");
+                        showNotification("Request sent. They can allow permanently or reject.", "success");
+                      } catch (error: any) {
+                        showNotification(
+                          error.response?.data?.message || "Failed to send request",
+                          "error"
+                        );
+                      } finally {
+                        setRequestingNumberReveal(false);
+                      }
+                    }}
+                    disabled={requestingNumberReveal}
+                    variant="gradient"
+                    Size="large"
+                  />
+                ) : null}
+              </section>
             );
           }
 
           if (!hasPermissionToSeeInfo) return null;
 
           return (
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="relative backdrop-blur-xl bg-bg-primary/70 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-cyan-500/5 to-cyan-500/5 opacity-50"></div>
-            <div className="relative p-6 sm:p-8 lg:p-10">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="p-3 bg-gradient-to-br from-primary to-cyan-600 rounded-2xl shadow-lg">
-                  <i className="pi pi-phone text-white text-xl"></i>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black text-text-primary bg-gradient-to-r from-primary to-cyan-600 bg-clip-text text-transparent">
-                  Contact Information
+            <section className="app-panel">
+              <div className="app-panel-head">
+                <h2 className="app-panel-title">
+                  <i className="pi pi-id-card" />
+                  Contact information
                 </h2>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {/* Mobile Number */}
-                <div className="p-6 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center shadow-lg">
-                      <i className="pi pi-phone text-white text-lg"></i>
-                    </div>
-                    <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide m-0">Mobile Number</p>
-                  </div>
-                  <p className="text-lg font-bold text-text-primary m-0">
-                    {profile.mobileNumber}
-                  </p>
+              <div className="app-form-grid">
+                <div className="app-profile-field">
+                  <p className="app-profile-field-label">Mobile number</p>
+                  <p className="app-profile-field-value">{profile.mobileNumber}</p>
                 </div>
-
-                {/* Location */}
                 {(profile.area || profile.city || profile.state) && (
-                  <div className="p-6 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center shadow-lg">
-                        <i className="pi pi-map-marker text-white text-lg"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide m-0">Address</p>
-                    </div>
-                    <p className="text-lg font-bold text-text-primary m-0">
-                      {[profile.area, profile.city, profile.state]
-                        .filter(Boolean)
-                        .join(", ")}
+                  <div className="app-profile-field">
+                    <p className="app-profile-field-label">Address</p>
+                    <p className="app-profile-field-value">
+                      {[profile.area, profile.city, profile.state].filter(Boolean).join(", ")}
                       {profile.pincode && ` - ${profile.pincode}`}
                     </p>
                   </div>
                 )}
-
-                {/* Country */}
                 {profile.country && (
-                  <div className="p-6 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center shadow-lg">
-                        <i className="pi pi-globe text-white text-lg"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide m-0">Country</p>
-                    </div>
-                    <p className="text-lg font-bold text-text-primary m-0">
-                      {profile.country}
-                    </p>
+                  <div className="app-profile-field">
+                    <p className="app-profile-field-label">Country</p>
+                    <p className="app-profile-field-value">{profile.country}</p>
                   </div>
                 )}
-
-                {/* Pincode */}
                 {profile.pincode && (
-                  <div className="p-6 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:scale-[1.02]">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center shadow-lg">
-                        <i className="pi pi-map text-white text-lg"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide m-0">Pincode</p>
-                    </div>
-                    <p className="text-lg font-bold text-text-primary m-0">
-                      {profile.pincode}
-                    </p>
+                  <div className="app-profile-field">
+                    <p className="app-profile-field-label">Pincode</p>
+                    <p className="app-profile-field-value">{profile.pincode}</p>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
-        </div>
-          ); })()}
-      </div>
-    </div>
+            </section>
+          );
+        })()}
+    </PageLayout>
   );
 }

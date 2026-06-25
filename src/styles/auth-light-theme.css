@@ -1,0 +1,324 @@
+/**
+ * Login / Signup — light theme
+ * Scoped to [data-theme="light"] .auth-resend
+ */
+
+[data-theme="light"] .auth-resend {
+  --ll-bg: #ffffff;
+  --ll-bg-soft: #fafaf9;
+  --ll-bg-muted: #f5f5f4;
+  --ll-ink: #18181b;
+  --ll-ink-secondary: #52525b;
+  --ll-ink-muted: #a1a1aa;
+  --ll-border: rgba(24, 24, 27, 0.08);
+  --ll-border-strong: rgba(24, 24, 27, 0.14);
+  --ll-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --ll-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
+  --ll-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.07), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --ll-brand: #ff6000;
+  --ll-brand-soft: rgba(255, 96, 0, 0.1);
+  --ll-brand-glow: rgba(255, 96, 0, 0.18);
+
+  background:
+    radial-gradient(ellipse 90% 60% at 50% -10%, rgba(255, 96, 0, 0.06) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 50% at 100% 20%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+    linear-gradient(180deg, #ffffff 0%, #fafaf9 55%, #ffffff 100%);
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .landing-resend-ray {
+  background: linear-gradient(90deg, transparent, rgba(255, 96, 0, 0.12), transparent);
+  opacity: 0.35;
+}
+
+[data-theme="light"] .auth-resend .landing-resend-glow-top {
+  background: radial-gradient(circle, rgba(255, 180, 100, 0.12) 0%, transparent 70%);
+  opacity: 0.4;
+}
+
+/* ——— Back link & brand ——— */
+[data-theme="light"] .auth-resend .auth-resend-back {
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-back:hover {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-brand-tagline {
+  color: var(--ll-ink-muted);
+}
+
+/* ——— Login / Signup switch ——— */
+[data-theme="light"] .auth-resend .auth-resend-switch {
+  border-color: var(--ll-border);
+  background: var(--ll-bg-soft);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-switch-btn {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-switch-btn:hover {
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-switch-btn.is-active {
+  background: #ffffff;
+  color: var(--ll-ink);
+  box-shadow: var(--ll-shadow-sm);
+}
+
+/* ——— Form card ——— */
+[data-theme="light"] .auth-resend .resend-auth-card {
+  background: #ffffff;
+  border-color: var(--ll-border);
+  box-shadow: var(--ll-shadow-lg);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-section-card {
+  background: #ffffff;
+  border-color: var(--ll-border);
+  box-shadow: var(--ll-shadow-sm);
+}
+
+/* ——— Form typography ——— */
+[data-theme="light"] .auth-resend .auth-resend-form-kicker {
+  color: var(--ll-brand);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-form-title {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-form-lead {
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-section-title {
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-section-copy {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-label {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-section {
+  border-top-color: var(--ll-border);
+}
+
+/* ——— Inputs ——— */
+[data-theme="light"] .auth-resend .auth-resend-input.p-inputtext,
+[data-theme="light"] .auth-resend .auth-resend-input.p-inputtext:enabled:focus {
+  color: var(--ll-ink) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fafaf9 100%) !important;
+  border-color: var(--ll-border-strong) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-input.p-inputtext:enabled:hover {
+  border-color: rgba(24, 24, 27, 0.22) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-input.p-inputtext:enabled:focus {
+  border-color: rgba(255, 96, 0, 0.55) !important;
+  background: #ffffff !important;
+  box-shadow: 0 0 0 3px var(--ll-brand-soft) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-input:not(.p-inputtext) {
+  color: var(--ll-ink) !important;
+  background: linear-gradient(180deg, #ffffff 0%, #fafaf9 100%) !important;
+  border-color: var(--ll-border-strong) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-input:not(.p-inputtext):enabled:hover,
+[data-theme="light"] .auth-resend .auth-resend-input:not(.p-inputtext):hover {
+  border-color: rgba(24, 24, 27, 0.22) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-input:not(.p-inputtext):focus {
+  border-color: rgba(255, 96, 0, 0.55) !important;
+  box-shadow: 0 0 0 3px var(--ll-brand-soft) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-hint {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-hint strong {
+  color: var(--ll-ink);
+}
+
+/* ——— Buttons ——— */
+[data-theme="light"] .auth-resend .auth-resend-btn-primary.p-button {
+  background: linear-gradient(135deg, #ff7a1a 0%, #ff6000 50%, #e85d04 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px var(--ll-brand-glow);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-btn-primary.p-button:enabled:hover {
+  background: linear-gradient(135deg, #ff8c33 0%, #ff6b14 50%, #f05200 100%) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-btn-outlined.p-button {
+  background: #ffffff !important;
+  border-color: var(--ll-border-strong) !important;
+  color: var(--ll-ink) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-btn-outlined.p-button:enabled:hover {
+  background: var(--ll-bg-soft) !important;
+  border-color: rgba(24, 24, 27, 0.22) !important;
+  color: var(--ll-ink) !important;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-text-btn {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-text-btn:hover:not(:disabled) {
+  color: var(--ll-brand);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-switch-copy {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-link {
+  color: var(--ll-brand);
+}
+
+/* ——— Privacy choices ——— */
+[data-theme="light"] .auth-resend .auth-resend-choice {
+  background: var(--ll-bg-soft);
+  border-color: var(--ll-border);
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-choice:hover {
+  border-color: var(--ll-border-strong);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-choice.is-active {
+  border-color: rgba(255, 96, 0, 0.45);
+  background: #fff7ed;
+  color: var(--ll-brand);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-choice-title {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-choice.is-active .auth-resend-choice-title {
+  color: #c2410c;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-choice-detail {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-checkbox {
+  color: var(--ll-ink-secondary);
+}
+
+/* ——— Aside panel ——— */
+[data-theme="light"] .auth-resend .auth-resend-aside {
+  border-left-color: var(--ll-border);
+  background: var(--ll-bg-soft);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-kicker {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-title {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-accent {
+  color: var(--ll-brand);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-lead {
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-panel {
+  background: #ffffff;
+  border-color: var(--ll-border);
+  box-shadow: var(--ll-shadow-sm);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-panel-label {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-step-label {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-step-detail {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-stat {
+  background: #ffffff;
+  border-color: var(--ll-border);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-stat-value {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-stat-label {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-checklist li {
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-checklist li i {
+  color: #16a34a;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-aside-foot-text {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .resend-pill--success {
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+[data-theme="light"] .auth-resend .auth-resend-feature-item {
+  background: #ffffff;
+  border-color: var(--ll-border);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-feature-icon {
+  background: var(--ll-bg-soft);
+  border-color: var(--ll-border);
+  color: var(--ll-ink-secondary);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-feature-label {
+  color: var(--ll-ink);
+}
+
+[data-theme="light"] .auth-resend .auth-resend-feature-detail {
+  color: var(--ll-ink-muted);
+}
+
+[data-theme="light"] .auth-resend .theme-orb.light {
+  background: #ffffff;
+  border-color: var(--ll-border-strong);
+  box-shadow: var(--ll-shadow-sm);
+}

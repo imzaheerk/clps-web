@@ -1,9 +1,11 @@
 export { default as HeroSection } from "./HeroSection";
 export { default as CommunityStatsSection } from "./CommunityStatsSection";
+export { default as ShippedModulesSection } from "./ShippedModulesSection";
 export { default as HowChecknownHelpsSection } from "./HowChecknownHelpsSection";
 export { default as ProductHighlightsSection } from "./ProductHighlightsSection";
 export { default as HowItWorksSection } from "./HowItWorksSection";
 export { default as UseCasesSection } from "./UseCasesSection";
 export { default as MobileAppSection } from "./MobileAppSection";
+export { default as PricingSnapshotSection } from "./PricingSnapshotSection";
 export { default as FinalCtaSection } from "./FinalCtaSection";
 export { default as FooterSection } from "./FooterSection";

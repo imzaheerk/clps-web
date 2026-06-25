@@ -1,5 +1,6 @@
 import { axiosInstance } from "../axiosInstance/axiosInstance";
 import { UserOutput } from "@/types";
+import type { DiscoveryRadiusKm } from "@/constants/discoveryRadius";
 
 export interface UpdateProfileInput {
   name?: string;
@@ -9,6 +10,7 @@ export interface UpdateProfileInput {
   pincode?: string;
   area?: string;
   isActive?: boolean;
+  discoveryRadiusKm?: DiscoveryRadiusKm;
 }
 
 export const profileService = {

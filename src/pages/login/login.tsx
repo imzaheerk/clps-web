@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { InputText } from "primereact/inputtext";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLogin } from "./hooks";
 import { useNavigate } from "react-router-dom";
@@ -12,7 +13,7 @@ export default function Login() {
   const [otpSent, setOtpSent] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-  const { loading, sendOTP, verifyOTP, clearError } = useLogin();
+  const { sendingOtp, verifyingOtp, sendOTP, verifyOTP, clearError } = useLogin();
 
   const handleSendOTP = async () => {
     if (!mobileNumber.match(/^[0-9]{10}$/)) {
@@ -49,34 +50,19 @@ export default function Login() {
   };
 
   return (
-    <div className="w-full max-w-[460px] mx-auto flex flex-col gap-4 sm:gap-5">
-      <button
-        onClick={() => navigate("/")}
-        className="self-start flex items-center gap-1.5 text-text-secondary hover:text-primary transition-colors duration-300 group mb-1.5"
-      >
-        <i className="pi pi-arrow-left text-xs group-hover:-translate-x-1 transition-transform duration-300"></i>
-        <span className="text-xs font-medium">Back</span>
-      </button>
-
-      <div className="text-center">
-        <h2 className="text-2xl sm:text-3xl font-extrabold mb-1.5 text-text-primary">
-          Welcome back
-        </h2>
-        <p className="text-text-secondary text-sm sm:text-base">
-          Enter your mobile number and OTP to continue
+    <div className="auth-resend-form">
+      <div className="auth-resend-form-head">
+        <p className="auth-resend-form-kicker">Account access</p>
+        <h2 className="auth-resend-form-title">Log in with your mobile</h2>
+        <p className="auth-resend-form-lead">
+          Enter your number and we&apos;ll send a one-time code to verify it&apos;s you.
         </p>
       </div>
 
-      <form
-        onSubmit={preventDefaultHandler(() => {})}
-        className="flex flex-col gap-3.5 sm:gap-4"
-      >
-        <div className="flex flex-col gap-1.5 sm:gap-2">
-          <label
-            htmlFor="mobile"
-            className="font-semibold text-text-primary text-sm sm:text-base"
-          >
-            Mobile Number
+      <form onSubmit={preventDefaultHandler(() => {})} className="auth-resend-fields">
+        <div className="auth-resend-field">
+          <label htmlFor="mobile" className="auth-resend-label">
+            Mobile number
           </label>
           <InputText
             id="mobile"
@@ -88,20 +74,17 @@ export default function Login() {
                 handleSendOTP();
               }
             }}
-            placeholder="Eg: 9876543210"
+            placeholder="9876543210"
             maxLength={10}
             keyfilter="int"
-            className="w-full input-standard"
+            className="w-full auth-resend-input"
             autoFocus
           />
         </div>
 
-        <div className="flex flex-col gap-1.5 sm:gap-2 mt-1">
-          <label
-            htmlFor="otp"
-            className="font-semibold text-text-primary text-sm sm:text-base"
-          >
-            OTP
+        <div className="auth-resend-field">
+          <label htmlFor="otp" className="auth-resend-label">
+            One-time code
           </label>
           <InputText
             id="otp"
@@ -116,57 +99,62 @@ export default function Login() {
             placeholder="000000"
             maxLength={6}
             keyfilter="int"
-            className="w-full input-otp"
+            className="w-full auth-resend-input auth-resend-input--otp"
             disabled={!otpSent}
           />
           {otpSent && (
-            <p className="text-sm text-text-secondary text-center flex items-center justify-center gap-2">
-              <i className="pi pi-phone"></i>
-              <span>
-                OTP sent to: <strong>{mobileNumber}</strong>
-              </span>
+            <p className="auth-resend-hint">
+              <i className="pi pi-phone" />
+              Code sent to <strong>{mobileNumber}</strong>
             </p>
           )}
         </div>
 
-        <div className="flex gap-3 mt-1">
+        <div className="auth-resend-actions-row">
           <Button
-            label="Send OTP"
+            label="Send code"
             icon="pi pi-send"
             onClick={handleSendOTP}
-            loading={loading}
-            disabled={!mobileNumber.match(/^[0-9]{10}$/)}
+            loading={sendingOtp}
+            disabled={!mobileNumber.match(/^[0-9]{10}$/) || verifyingOtp}
             variant="outlined"
             Size="large"
-            className="flex-1"
+            className="flex-1 auth-resend-btn-outlined"
             type="button"
           />
           <Button
-            label="Login"
+            label="Log in"
             icon="pi pi-sign-in"
             onClick={handleLogin}
-            loading={loading}
-            disabled={!otp.match(/^[0-9]{6}$/) || !otpSent}
-            variant="gradient"
+            loading={verifyingOtp}
+            disabled={!otp.match(/^[0-9]{6}$/) || !otpSent || sendingOtp}
+            variant="primary"
             Size="large"
-            className="flex-1"
+            className="flex-1 auth-resend-btn-primary"
             type="button"
           />
         </div>
 
         {otpSent && (
-          <div className="text-center">
+          <div className="auth-resend-inline-action">
             <button
               type="button"
               onClick={preventDefaultHandler(handleSendOTP)}
-              disabled={loading}
-              className="text-primary bg-transparent border-none cursor-pointer font-medium text-xs sm:text-sm underline opacity-70 disabled:opacity-50 hover:opacity-100 transition-opacity disabled:cursor-not-allowed"
+              disabled={sendingOtp || verifyingOtp}
+              className="auth-resend-text-btn"
             >
-              {loading ? "Sending..." : "Resend OTP"}
+              {sendingOtp ? "Sending..." : "Resend code"}
             </button>
           </div>
         )}
       </form>
+
+      <p className="auth-resend-switch-copy">
+        New here?{" "}
+        <Link to="/signup" className="auth-resend-link">
+          Create an account
+        </Link>
+      </p>
     </div>
   );
 }

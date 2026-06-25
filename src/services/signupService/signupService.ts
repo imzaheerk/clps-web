@@ -17,6 +17,7 @@ export interface CreateUserInput {
   city: string;
   area: string;
   numberVisibility?: "fully_visible" | "masked";
+  referralCode?: string;
 }
 
 export interface CreateUserResponse extends UserOutput {}

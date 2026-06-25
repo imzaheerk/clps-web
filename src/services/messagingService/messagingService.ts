@@ -1,5 +1,7 @@
 import { axiosInstance } from "../axiosInstance/axiosInstance";
 
+import type { BlockStatus } from "@/services/chatSafetyService/chatSafetyService";
+
 export interface ChatRequest {
   id: number;
   senderId: number;
@@ -120,10 +122,12 @@ export const messagingService = {
   async checkChatStatus(otherUserId: number): Promise<{
     chatRequest: ChatRequest | null;
     conversation: Conversation | null;
+    blockStatus: BlockStatus;
   }> {
     const response = await axiosInstance.get<{
       chatRequest: ChatRequest | null;
       conversation: Conversation | null;
+      blockStatus: BlockStatus;
     }>(`/chat-requests/check?userId=${otherUserId}`);
     return response.data;
   },

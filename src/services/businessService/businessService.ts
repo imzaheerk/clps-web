@@ -101,12 +101,15 @@ export const businessService = {
 
   async searchBusinesses(
     keyword: string,
-    query?: { limit?: number; offset?: number }
+    query?: { limit?: number; offset?: number; discoveryRadiusKm?: number }
   ): Promise<BusinessListResponse> {
     const params = new URLSearchParams();
     if (keyword) params.append("q", keyword);
     if (query?.limit) params.append("limit", query.limit.toString());
     if (query?.offset) params.append("offset", query.offset.toString());
+    if (query?.discoveryRadiusKm !== undefined) {
+      params.append("discoveryRadiusKm", String(query.discoveryRadiusKm));
+    }
 
     const response = await axiosInstance.get<BusinessListResponse>(
       `/businesses/search?${params.toString()}`

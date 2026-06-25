@@ -1,15 +1,41 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { Header, Button, showNotification, NetworkBackground } from "@/components";
+import { PageLayout, PageHeader, showNotification, DiscoveryRadiusControl } from "@/components";
+import ResendModal from "@/components/ResendModal";
 import { InputText } from "primereact/inputtext";
 import { profileService } from "@/services/profileService/profileService";
+import { useSubscription } from "@/hooks/useSubscription";
+import {
+  DEFAULT_DISCOVERY_RADIUS_KM,
+  discoveryRadiusLabel,
+  type DiscoveryRadiusKm,
+} from "@/constants/discoveryRadius";
+
+const inputClass = "auth-resend-input w-full";
+
+const profileTips = [
+  "Your pincode controls where you appear in local search.",
+  "Discovery radius sets how far you can search and what shows in your feed.",
+  "Use your real name so people can recognize you.",
+  "Area and city help neighbours find you faster.",
+];
+
+const locationSummary = (parts: (string | undefined)[]) =>
+  parts.filter(Boolean).join(", ") || "Not set";
 
 export default function Profile() {
-  const navigate = useNavigate();
   const { user, login } = useAuth();
+  const { subscription } = useSubscription(user?.id ?? null, !!user?.id);
+  const isPremium =
+    subscription?.status === "active" &&
+    subscription?.plan &&
+    !subscription.plan.isDefault &&
+    subscription.plan.price > 0;
+
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [radiusSaving, setRadiusSaving] = useState(false);
+  const [showDeactivateModal, setShowDeactivateModal] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || "",
     country: user?.country || "",
@@ -22,8 +48,14 @@ export default function Profile() {
   const handleSave = async () => {
     if (!user) return;
 
-    if (!formData.name.trim() || !formData.pincode.trim() || !formData.country.trim() || 
-        !formData.state.trim() || !formData.city.trim() || !formData.area.trim()) {
+    if (
+      !formData.name.trim() ||
+      !formData.pincode.trim() ||
+      !formData.country.trim() ||
+      !formData.state.trim() ||
+      !formData.city.trim() ||
+      !formData.area.trim()
+    ) {
       showNotification("Please fill in all required fields", "error");
       return;
     }
@@ -31,13 +63,13 @@ export default function Profile() {
     setLoading(true);
     try {
       const updatedUser = await profileService.updateProfile(user.id, formData);
-      // Update user in context and localStorage
       localStorage.setItem("checknown-user", JSON.stringify(updatedUser));
       login("temp-token", updatedUser);
       setIsEditing(false);
       showNotification("Profile updated successfully", "success");
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to update profile. Please try again.";
+      const errorMessage =
+        error.response?.data?.message || "Failed to update profile. Please try again.";
       showNotification(errorMessage, "error");
     } finally {
       setLoading(false);
@@ -45,7 +77,6 @@ export default function Profile() {
   };
 
   const handleCancel = () => {
-    // Reset form data to original user data
     setFormData({
       name: user?.name || "",
       country: user?.country || "",
@@ -64,6 +95,7 @@ export default function Profile() {
       const updatedUser = await profileService.updateProfile(user.id, { isActive: false });
       localStorage.setItem("checknown-user", JSON.stringify(updatedUser));
       login("temp-token", updatedUser);
+      setShowDeactivateModal(false);
       showNotification("Account deactivated. You won't appear in search results.", "success");
     } catch (error: any) {
       const msg = error.response?.data?.message || "Failed to deactivate account.";
@@ -89,350 +121,520 @@ export default function Profile() {
     }
   };
 
+  const handleRadiusChange = async (radiusKm: DiscoveryRadiusKm) => {
+    if (!user || radiusKm === (user.discoveryRadiusKm ?? DEFAULT_DISCOVERY_RADIUS_KM)) return;
+    setRadiusSaving(true);
+    try {
+      const updatedUser = await profileService.updateProfile(user.id, {
+        discoveryRadiusKm: radiusKm,
+      });
+      localStorage.setItem("checknown-user", JSON.stringify(updatedUser));
+      login("temp-token", updatedUser);
+      showNotification(`Discovery radius set to ${discoveryRadiusLabel(radiusKm)}`, "success");
+    } catch (error: any) {
+      const msg =
+        error.response?.data?.message || "Failed to update discovery radius.";
+      showNotification(msg, "error");
+    } finally {
+      setRadiusSaving(false);
+    }
+  };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-      {/* Network Background - Global Internet Network Visualization */}
-      <NetworkBackground />
-      
-      {/* Animated background elements */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-0 -right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-emerald-500/20 to-teal-500/20 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-      </div>
+  const personalFields = [
+    { label: "Full name", value: user?.name },
+    { label: "Mobile number", value: user?.mobileNumber },
+  ];
 
-      <Header showAuthButtons={false} />
+  const locationFields = [
+    { label: "Country", value: user?.country },
+    { label: "State", value: user?.state },
+    { label: "City", value: user?.city },
+    { label: "Pincode", value: user?.pincode },
+    { label: "Area / locality", value: user?.area, span: true },
+  ];
 
-      <div className="flex-1 max-w-[1000px] w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-8 sm:gap-10 relative z-10">
-        {/* Page Header */}
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary via-cyan-500 to-emerald-500 rounded-3xl blur-xl opacity-30 group-hover:opacity-50 transition-opacity duration-500"></div>
-          <div className="relative backdrop-blur-xl bg-bg-primary/60 rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-cyan-500/10 to-emerald-500/10 opacity-50"></div>
-            <div className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gradient-to-br from-primary to-cyan-600 rounded-2xl shadow-lg">
-                  <i className="pi pi-user text-white text-2xl"></i>
+  const previewLocation = locationSummary([formData.area, formData.city, formData.state]);
+  const viewLocation = locationSummary([user?.area, user?.city, user?.state]);
+
+  if (!user) return null;
+
+  if (isEditing) {
+    return (
+      <PageLayout maxWidth="lg">
+        <button
+          type="button"
+          className="resend-btn resend-btn-secondary self-start"
+          onClick={handleCancel}
+          disabled={loading}
+        >
+          <i className="pi pi-arrow-left" />
+          Back to profile
+        </button>
+
+        <PageHeader
+          icon="pi pi-pencil"
+          title="Edit profile"
+          description="Update your name and location so people can find you locally."
+        />
+
+        <div className="app-compose-layout">
+          <form
+            className="app-panel app-compose-form"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-id-card" />
+                Profile details
+              </h2>
+              <p className="app-panel-copy">Mobile number is linked to your account and cannot be changed.</p>
+            </div>
+
+            <fieldset className="app-compose-fieldset">
+              <legend className="app-compose-fieldset-title">
+                <i className="pi pi-user" />
+                Personal
+              </legend>
+              <div className="app-form-grid">
+                <div>
+                  <label className="app-form-label" htmlFor="profile-name">
+                    Full name <span className="text-red-400">*</span>
+                  </label>
+                  <InputText
+                    id="profile-name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    placeholder="Enter your full name"
+                    className={inputClass}
+                  />
                 </div>
                 <div>
-                  <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black text-text-primary mb-2 bg-gradient-to-r from-primary via-cyan-600 to-emerald-600 bg-clip-text text-transparent">
-                    My Profile
-                  </h1>
-                  <p className="text-text-secondary text-base">
-                    Manage your account information
-                  </p>
+                  <label className="app-form-label" htmlFor="profile-mobile">
+                    Mobile number
+                  </label>
+                  <InputText
+                    id="profile-mobile"
+                    value={user.mobileNumber}
+                    disabled
+                    className={`${inputClass} opacity-70`}
+                  />
+                  <p className="app-form-hint">Cannot be changed</p>
                 </div>
               </div>
-              {!isEditing && (
-                <Button
-                  label="Edit Profile"
-                  icon="pi pi-pencil"
-                  onClick={() => setIsEditing(true)}
-                  variant="gradient"
-                  Size="medium"
-                />
-              )}
-            </div>
-          </div>
-        </div>
+            </fieldset>
 
-        {/* Profile Information */}
-        {user && (
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="relative backdrop-blur-xl bg-bg-primary/70 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-cyan-500/5 to-cyan-500/5 opacity-50"></div>
-              <div className="relative p-6 sm:p-8 lg:p-10">
-              {isEditing ? (
-                <div className="flex flex-col gap-8">
-                  {/* User Avatar Section */}
-                  <div className="flex items-center gap-4 p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                      <span className="text-white font-bold text-2xl">
-                        {(user.name || "U")[0].toUpperCase()}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-base font-bold text-text-primary m-0 mb-1">
-                        {user.name || "User"}
-                      </p>
-                      <p className="text-sm text-text-secondary m-0">
-                        {user.mobileNumber}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div className="flex flex-col gap-3">
-                      <label className="flex items-center gap-2 text-sm font-bold text-text-primary">
-                        <i className="pi pi-user text-primary"></i>
-                        Full Name <span className="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Enter your full name"
-                        className="w-full px-5 py-3 text-base bg-bg-secondary/50 backdrop-blur-sm border-2 border-white/10 rounded-2xl focus:border-primary transition-all"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <label className="flex items-center gap-2 text-sm font-bold text-text-primary">
-                        <i className="pi pi-phone text-primary"></i>
-                        Mobile Number
-                      </label>
-                      <InputText
-                        value={user.mobileNumber}
-                        disabled
-                        className="w-full px-5 py-3 text-base bg-bg-secondary/30 backdrop-blur-sm border-2 border-white/10 rounded-2xl opacity-70"
-                      />
-                      <p className="text-xs text-text-secondary m-0">
-                        Mobile number cannot be changed
-                      </p>
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <label className="flex items-center gap-2 text-sm font-bold text-text-primary">
-                        <i className="pi pi-globe text-primary"></i>
-                        Country <span className="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        value={formData.country}
-                        onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                        placeholder="Enter country"
-                        className="w-full px-5 py-3 text-base bg-bg-secondary/50 backdrop-blur-sm border-2 border-white/10 rounded-2xl focus:border-primary transition-all"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <label className="flex items-center gap-2 text-sm font-bold text-text-primary">
-                        <i className="pi pi-map text-primary"></i>
-                        State <span className="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        value={formData.state}
-                        onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                        placeholder="Enter state"
-                        className="w-full px-5 py-3 text-base bg-bg-secondary/50 backdrop-blur-sm border-2 border-white/10 rounded-2xl focus:border-primary transition-all"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <label className="flex items-center gap-2 text-sm font-bold text-text-primary">
-                        <i className="pi pi-building text-primary"></i>
-                        City <span className="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        value={formData.city}
-                        onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        placeholder="Enter city"
-                        className="w-full px-5 py-3 text-base bg-bg-secondary/50 backdrop-blur-sm border-2 border-white/10 rounded-2xl focus:border-primary transition-all"
-                      />
-                    </div>
-
-                    <div className="flex flex-col gap-3">
-                      <label className="flex items-center gap-2 text-sm font-bold text-text-primary">
-                        <i className="pi pi-inbox text-primary"></i>
-                        Pincode <span className="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        value={formData.pincode}
-                        onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
-                        placeholder="Enter pincode"
-                        className="w-full px-5 py-3 text-base bg-bg-secondary/50 backdrop-blur-sm border-2 border-white/10 rounded-2xl focus:border-primary transition-all"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-2 flex flex-col gap-3">
-                      <label className="flex items-center gap-2 text-sm font-bold text-text-primary">
-                        <i className="pi pi-map-marker text-primary"></i>
-                        Area/Locality <span className="text-red-500">*</span>
-                      </label>
-                      <InputText
-                        value={formData.area}
-                        onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                        placeholder="Enter area/locality"
-                        className="w-full px-5 py-3 text-base bg-bg-secondary/50 backdrop-blur-sm border-2 border-white/10 rounded-2xl focus:border-primary transition-all"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 justify-end pt-6">
-                    <Button
-                      label="Cancel"
-                      icon="pi pi-times"
-                      onClick={handleCancel}
-                      variant="outlined"
-                      disabled={loading}
-                      Size="large"
+            <fieldset className="app-compose-fieldset">
+              <legend className="app-compose-fieldset-title">
+                <i className="pi pi-map-marker" />
+                Location
+              </legend>
+              <div className="app-form-stack">
+                <div className="app-form-grid">
+                  <div>
+                    <label className="app-form-label" htmlFor="profile-country">
+                      Country <span className="text-red-400">*</span>
+                    </label>
+                    <InputText
+                      id="profile-country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                      placeholder="Enter country"
+                      className={inputClass}
                     />
-                    <Button
-                      label={loading ? "Saving..." : "Save Changes"}
-                      icon={loading ? "pi pi-spin pi-spinner" : "pi pi-check"}
-                      onClick={handleSave}
-                      variant="gradient"
-                      disabled={loading}
-                      Size="large"
-                    />
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Profile Avatar */}
-                  <div className="flex items-center gap-5 p-6 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl mb-6">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center flex-shrink-0 shadow-lg">
-                    <span className="text-white font-bold text-3xl">
-                      {(user.name || "U")[0].toUpperCase()}
-                    </span>
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-text-primary mb-1">
-                      {user.name || "User"}
-                    </h2>
-                    <p className="text-sm text-text-secondary">
-                      {user.mobileNumber}
-                    </p>
+                    <label className="app-form-label" htmlFor="profile-state">
+                      State <span className="text-red-400">*</span>
+                    </label>
+                    <InputText
+                      id="profile-state"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      placeholder="Enter state"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="app-form-label" htmlFor="profile-city">
+                      City <span className="text-red-400">*</span>
+                    </label>
+                    <InputText
+                      id="profile-city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      placeholder="Enter city"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="app-form-label" htmlFor="profile-pincode">
+                      Pincode <span className="text-red-400">*</span>
+                    </label>
+                    <InputText
+                      id="profile-pincode"
+                      value={formData.pincode}
+                      onChange={(e) => setFormData({ ...formData, pincode: e.target.value })}
+                      placeholder="Enter pincode"
+                      className={inputClass}
+                    />
+                  </div>
+                  <div className="span-2">
+                    <label className="app-form-label" htmlFor="profile-area">
+                      Area / locality <span className="text-red-400">*</span>
+                    </label>
+                    <InputText
+                      id="profile-area"
+                      value={formData.area}
+                      onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                      placeholder="Enter area or locality"
+                      className={inputClass}
+                    />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center">
-                        <i className="pi pi-user text-white text-sm"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide">Full Name</p>
-                    </div>
-                    <p className="text-base font-bold text-text-primary m-0">
-                      {user.name || "—"}
-                    </p>
-                  </div>
-
-                  <div className="p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center">
-                        <i className="pi pi-phone text-white text-sm"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide">Mobile Number</p>
-                    </div>
-                    <p className="text-base font-bold text-text-primary m-0">
-                      {user.mobileNumber || "—"}
-                    </p>
-                  </div>
-
-                  <div className="p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center">
-                        <i className="pi pi-globe text-white text-sm"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide">Country</p>
-                    </div>
-                    <p className="text-base font-bold text-text-primary m-0">
-                      {user.country || "—"}
-                    </p>
-                  </div>
-
-                  <div className="p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center">
-                        <i className="pi pi-map text-white text-sm"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide">State</p>
-                    </div>
-                    <p className="text-base font-bold text-text-primary m-0">
-                      {user.state || "—"}
-                    </p>
-                  </div>
-
-                  <div className="p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center">
-                        <i className="pi pi-building text-white text-sm"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide">City</p>
-                    </div>
-                    <p className="text-base font-bold text-text-primary m-0">
-                      {user.city || "—"}
-                    </p>
-                  </div>
-
-                  <div className="p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center">
-                        <i className="pi pi-inbox text-white text-sm"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide">Pincode</p>
-                    </div>
-                    <p className="text-base font-bold text-text-primary m-0">
-                      {user.pincode || "—"}
-                    </p>
-                  </div>
-
-                  <div className="sm:col-span-2 p-5 bg-bg-secondary/50 backdrop-blur-sm rounded-2xl">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-cyan-600 flex items-center justify-center">
-                        <i className="pi pi-map-marker text-white text-sm"></i>
-                      </div>
-                      <p className="text-xs text-text-secondary font-semibold uppercase tracking-wide">Area/Locality</p>
-                    </div>
-                    <p className="text-base font-bold text-text-primary m-0">
-                      {user.area || "—"}
-                    </p>
-                  </div>
-                </div>
-                </>
-              )}
               </div>
-            </div>
-          </div>
-        )}
+            </fieldset>
 
-        {/* Account visibility (deactivate / activate) */}
-        {user && (
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            <div className="relative backdrop-blur-xl bg-bg-primary/70 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-cyan-500/5 to-cyan-500/5 opacity-50"></div>
-              <div className="relative p-6 sm:p-8">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-3 bg-gradient-to-br from-primary to-cyan-600 rounded-2xl shadow-lg">
-                    <i className="pi pi-eye text-white text-xl"></i>
-                  </div>
-                  <h2 className="text-2xl font-black text-text-primary bg-gradient-to-r from-primary to-cyan-600 bg-clip-text text-transparent">
-                    Account visibility
-                  </h2>
-                </div>
-                <p className="text-text-secondary text-sm mb-4">
-                  {user.isActive !== false
-                    ? "Your account is visible in search. Others can find you by name or number."
-                    : "Your account is hidden from search. No one can find you until you activate again."}
-                </p>
-                {user.isActive !== false ? (
-                  <Button
-                    label="Deactivate account"
-                    icon="pi pi-eye-slash"
-                    onClick={handleDeactivateProfile}
-                    disabled={loading}
-                    variant="outlined"
-                    Size="medium"
-                    className="!border-red-500 !text-red-500 hover:!bg-red-500/10 hover:!border-red-600 hover:!text-red-600"
-                  />
+            <div className="app-action-row border-t border-white/10 pt-5 mt-2">
+              <button
+                type="submit"
+                className="resend-btn resend-btn-primary flex-1 sm:flex-none"
+                disabled={loading}
+              >
+                {loading ? (
+                  <>
+                    <i className="pi pi-spin pi-spinner" />
+                    Saving…
+                  </>
                 ) : (
-                  <Button
-                    label="Activate account"
-                    icon="pi pi-eye"
-                    onClick={handleActivateProfile}
-                    disabled={loading}
-                    variant="gradient"
-                    Size="medium"
-                  />
+                  <>
+                    <i className="pi pi-check" />
+                    Save changes
+                  </>
                 )}
-              </div>
+              </button>
+              <button
+                type="button"
+                className="resend-btn resend-btn-secondary flex-1 sm:flex-none"
+                onClick={handleCancel}
+                disabled={loading}
+              >
+                Cancel
+              </button>
             </div>
-          </div>
-        )}
+          </form>
 
+          <aside className="app-compose-aside">
+            <section className="app-panel">
+              <div className="app-panel-head">
+                <h2 className="app-panel-title">
+                  <i className="pi pi-lightbulb" />
+                  Profile tips
+                </h2>
+              </div>
+              <ul className="app-tip-list-bullets">
+                {profileTips.map((tip) => (
+                  <li key={tip}>{tip}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="app-panel app-compose-preview">
+              <div className="app-panel-head">
+                <h2 className="app-panel-title">
+                  <i className="pi pi-eye" />
+                  Preview
+                </h2>
+                <p className="app-panel-copy">How you may appear in search results</p>
+              </div>
+              <article className="app-profile-preview-card app-compose-preview-card">
+                <span className="app-profile-avatar app-profile-avatar--lg">
+                  {(formData.name || "U")[0].toUpperCase()}
+                </span>
+                <div className="app-profile-preview-body">
+                  <h3 className="app-profile-preview-name">
+                    {formData.name.trim() || "Your name"}
+                  </h3>
+                  <p className="app-profile-preview-meta">{user.mobileNumber}</p>
+                  <p className="app-profile-preview-location">
+                    {previewLocation}
+                    {formData.pincode ? ` · ${formData.pincode}` : ""}
+                  </p>
+                  <span
+                    className={`resend-pill ${
+                      user.isActive === false ? "resend-pill--danger" : "resend-pill--success"
+                    }`}
+                  >
+                    {user.isActive === false ? "Hidden from search" : "Visible in search"}
+                  </span>
+                </div>
+              </article>
+            </section>
+
+            {formData.pincode ? (
+              <section className="app-panel app-panel--compact">
+                <p className="app-panel-stat m-0">
+                  <i className="pi pi-map-marker text-[#ff6000]" />
+                  Local search pincode <strong>{formData.pincode}</strong>
+                </p>
+              </section>
+            ) : null}
+          </aside>
+        </div>
+      </PageLayout>
+    );
+  }
+
+  return (
+    <PageLayout maxWidth="lg">
+      <PageHeader
+        icon="pi pi-user"
+        title="My profile"
+        description="Your account details and visibility settings"
+        action={
+          <button
+            type="button"
+            className="resend-btn resend-btn-primary"
+            onClick={() => setIsEditing(true)}
+          >
+            <i className="pi pi-pencil" />
+            Edit profile
+          </button>
+        }
+      />
+
+      <div className="app-profile-page-layout">
+        <div className="app-profile-main">
+          <section className="app-panel app-profile-hero">
+            <span className="app-profile-avatar app-profile-avatar--xl">
+              {(user.name || "U")[0].toUpperCase()}
+            </span>
+            <div className="app-profile-hero-copy">
+              <h2 className="app-profile-hero-name">{user.name || "User"}</h2>
+              <p className="app-profile-hero-meta">{user.mobileNumber}</p>
+              <p className="app-profile-hero-location">
+                {viewLocation || "Location not set"}
+                {user.pincode ? ` · ${user.pincode}` : ""}
+              </p>
+            </div>
+            {user.isActive === false ? (
+              <span className="resend-pill resend-pill--danger app-profile-hero-badge">
+                Hidden from search
+              </span>
+            ) : (
+              <span className="resend-pill resend-pill--success app-profile-hero-badge">
+                Visible in search
+              </span>
+            )}
+          </section>
+
+          <section className="app-panel">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-id-card" />
+                Personal information
+              </h2>
+              <p className="app-panel-copy">Name and contact details on your account</p>
+            </div>
+            <div className="app-form-grid">
+              {personalFields.map((field) => (
+                <div key={field.label}>
+                  <div className="app-profile-field">
+                    <p className="app-profile-field-label">{field.label}</p>
+                    <p className="app-profile-field-value">{field.value || "—"}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="app-panel">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-map-marker" />
+                Location
+              </h2>
+              <p className="app-panel-copy">Where you appear in local search results</p>
+            </div>
+            <div className="app-form-grid">
+              {locationFields.map((field) => (
+                <div key={field.label} className={field.span ? "span-2" : undefined}>
+                  <div className="app-profile-field">
+                    <p className="app-profile-field-label">{field.label}</p>
+                    <p className="app-profile-field-value">{field.value || "—"}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="app-panel">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-compass" />
+                Discovery radius
+              </h2>
+              <p className="app-panel-copy">
+                How far to search for people and businesses, and what appears in your local feed.
+                Currently <strong>{discoveryRadiusLabel(user.discoveryRadiusKm ?? DEFAULT_DISCOVERY_RADIUS_KM)}</strong>.
+              </p>
+            </div>
+            <DiscoveryRadiusControl
+              value={user.discoveryRadiusKm ?? DEFAULT_DISCOVERY_RADIUS_KM}
+              onChange={handleRadiusChange}
+              isPremium={!!isPremium}
+              disabled={radiusSaving}
+              onPremiumBlocked={() =>
+                showNotification("Premium required for radius beyond 2 km", "info")
+              }
+            />
+          </section>
+
+          <section className="app-panel app-panel--danger">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-eye" />
+                Account visibility
+              </h2>
+              <p className="app-panel-copy">
+                {user.isActive !== false
+                  ? "Your account is visible in search. Others can find you by name or number."
+                  : "Your account is hidden from search. No one can find you until you activate again."}
+              </p>
+            </div>
+            {user.isActive !== false ? (
+              <button
+                type="button"
+                className="resend-btn resend-btn-danger-outline"
+                onClick={() => setShowDeactivateModal(true)}
+                disabled={loading}
+              >
+                <i className="pi pi-eye-slash" />
+                Deactivate account
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="resend-btn resend-btn-primary"
+                onClick={handleActivateProfile}
+                disabled={loading}
+              >
+                <i className="pi pi-eye" />
+                Activate account
+              </button>
+            )}
+          </section>
+        </div>
+
+        <aside className="app-profile-aside">
+          <section className="app-panel">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-chart-bar" />
+                Account summary
+              </h2>
+            </div>
+            <ul className="app-profile-stat-list">
+              <li className="app-profile-stat-item">
+                <i className="pi pi-compass" />
+                <span>
+                  Searching within{" "}
+                  {discoveryRadiusLabel(user.discoveryRadiusKm ?? DEFAULT_DISCOVERY_RADIUS_KM)}
+                </span>
+              </li>
+              <li className="app-profile-stat-item">
+                <i className="pi pi-map-marker" />
+                <span>
+                  {user.pincode
+                    ? `Discoverable in pincode ${user.pincode}`
+                    : "Add a pincode to appear in local search"}
+                </span>
+              </li>
+              <li className="app-profile-stat-item">
+                <i className="pi pi-eye" />
+                <span>
+                  {user.isActive !== false
+                    ? "Your profile is visible to others"
+                    : "Your profile is hidden from search"}
+                </span>
+              </li>
+              <li className="app-profile-stat-item">
+                <i className="pi pi-phone" />
+                <span>Mobile number is verified and locked to this account</span>
+              </li>
+            </ul>
+          </section>
+
+          <section className="app-panel">
+            <div className="app-panel-head">
+              <h2 className="app-panel-title">
+                <i className="pi pi-lightbulb" />
+                Quick tips
+              </h2>
+            </div>
+            <ul className="app-tip-list-bullets">
+              {profileTips.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          </section>
+
+          <section className="app-panel app-panel--compact">
+            <button
+              type="button"
+              className="resend-btn resend-btn-secondary w-full"
+              onClick={() => setIsEditing(true)}
+            >
+              <i className="pi pi-pencil" />
+              Edit profile
+            </button>
+          </section>
+        </aside>
       </div>
-    </div>
+
+      <ResendModal
+        visible={showDeactivateModal}
+        onHide={() => !loading && setShowDeactivateModal(false)}
+        badge="Account"
+        title="Deactivate account?"
+        description={
+          <>
+            Hide <strong>{user.name || "your profile"}</strong> from search? Others won&apos;t be able to
+            find you until you activate again.
+          </>
+        }
+        icon="pi-eye-slash"
+        tone="danger"
+        footer={
+          <div className="resend-modal-actions-row">
+            <button
+              type="button"
+              className="resend-btn resend-btn-secondary"
+              onClick={() => setShowDeactivateModal(false)}
+              disabled={loading}
+            >
+              Keep active
+            </button>
+            <button
+              type="button"
+              className="resend-btn resend-btn-danger"
+              onClick={handleDeactivateProfile}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <i className="pi pi-spin pi-spinner" />
+                  Deactivating…
+                </>
+              ) : (
+                "Deactivate account"
+              )}
+            </button>
+          </div>
+        }
+      />
+    </PageLayout>
   );
 }

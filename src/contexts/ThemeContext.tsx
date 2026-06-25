@@ -4,6 +4,7 @@ import {
   useState,
   useEffect,
   ReactNode,
+  useCallback,
 } from "react";
 
 type Theme = "light" | "dark";
@@ -14,6 +15,30 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+const THEME_TRANSITION_MS = 450;
+
+function prefersReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+function runThemeTransition(apply: () => void) {
+  if (prefersReducedMotion()) {
+    apply();
+    return;
+  }
+
+  if (typeof document.startViewTransition === "function") {
+    document.startViewTransition(apply);
+    return;
+  }
+
+  document.documentElement.classList.add("theme-transition");
+  apply();
+  window.setTimeout(() => {
+    document.documentElement.classList.remove("theme-transition");
+  }, THEME_TRANSITION_MS);
+}
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [theme, setTheme] = useState<Theme>(() => {
@@ -57,9 +82,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     swapTheme();
   }, [theme]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
-  };
+  const toggleTheme = useCallback(() => {
+    runThemeTransition(() => {
+      setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    });
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme }}>

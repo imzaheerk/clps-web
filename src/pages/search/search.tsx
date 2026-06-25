@@ -1,17 +1,26 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import {
-  Button,
   showNotification,
   PageLayout,
   PageHeader,
-  GlassCard,
   EmptyState,
+  LoadingState,
+  DiscoveryRadiusControl,
 } from "@/components";
 import { InputText } from "primereact/inputtext";
 import { searchService, SearchResult } from "@/services/searchService/searchService";
 import { businessService } from "@/services/businessService/businessService";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSavedSearches } from "@/hooks/useSavedSearches";
+import { useSubscription } from "@/hooks/useSubscription";
+import {
+  DEFAULT_DISCOVERY_RADIUS_KM,
+  discoveryRadiusLabel,
+  type DiscoveryRadiusKm,
+} from "@/constants/discoveryRadius";
 import type { Business } from "@/services/businessService/businessService";
+import { businessAnalyticsService } from "@/services/businessAnalyticsService/businessAnalyticsService";
 
 const CATEGORY_LABELS: Record<string, string> = {
   restaurant: "Restaurant",
@@ -22,35 +31,62 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function Search() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { user } = useAuth();
+  const { subscription } = useSubscription(user?.id ?? null, !!user?.id);
+  const isPremium =
+    subscription?.status === "active" &&
+    subscription?.plan &&
+    !subscription.plan.isDefault &&
+    subscription.plan.price > 0;
+
+  const [discoveryRadius, setDiscoveryRadius] = useState<DiscoveryRadiusKm>(
+    DEFAULT_DISCOVERY_RADIUS_KM
+  );
+  const { saving, saveSearch, isQuerySaved, load: loadSavedSearches } = useSavedSearches(
+    user?.id ?? null
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [peopleResults, setPeopleResults] = useState<SearchResult[]>([]);
   const [businessResults, setBusinessResults] = useState<Business[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   const isPhoneSearch = () => /^[0-9]{10}$/.test(searchQuery.trim());
   const isValidSearch = () => searchQuery.trim().length >= 2 || isPhoneSearch();
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
+  useEffect(() => {
+    if (user?.discoveryRadiusKm !== undefined) {
+      setDiscoveryRadius(user.discoveryRadiusKm as DiscoveryRadiusKm);
+    }
+  }, [user?.discoveryRadiusKm]);
+
+  const handleSearch = useCallback(async (queryOverride?: string) => {
+    const q = (queryOverride ?? searchQuery).trim();
+    if (!q) {
       showNotification("Please enter a search query", "error");
       return;
     }
-    if (!isValidSearch()) {
+    if (!(q.length >= 2 || /^[0-9]{10}$/.test(q))) {
       showNotification(
-        isPhoneSearch() ? "Please enter a valid 10-digit phone number" : "Please enter at least 2 characters",
+        /^[0-9]+$/.test(q) ? "Please enter a valid 10-digit phone number" : "Please enter at least 2 characters",
         "error"
       );
       return;
     }
 
-    const q = searchQuery.trim();
+    setSearchQuery(q);
     setLoading(true);
+    setHasSearched(true);
     try {
+      const isPhone = /^[0-9]{10}$/.test(q);
+      const radiusParam = user ? discoveryRadius : undefined;
       const [people, businessesRes] = await Promise.all([
-        isPhoneSearch()
-          ? searchService.searchByMobile(q, 50)
-          : searchService.searchByName(q, 50),
-        businessService.searchBusinesses(q, { limit: 50 }),
+        isPhone
+          ? searchService.searchByMobile(q, 50, radiusParam)
+          : searchService.searchByName(q, 50, radiusParam),
+        businessService.searchBusinesses(q, { limit: 50, discoveryRadiusKm: radiusParam }),
       ]);
       setPeopleResults(people);
       setBusinessResults(businessesRes.businesses);
@@ -58,177 +94,236 @@ export default function Search() {
         showNotification("No results found", "info");
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Failed to search. Please try again.";
-      showNotification(errorMessage, "error");
+      showNotification(error.response?.data?.message || "Failed to search. Please try again.", "error");
       setPeopleResults([]);
       setBusinessResults([]);
     } finally {
       setLoading(false);
     }
+  }, [searchQuery, user, discoveryRadius]);
+
+  useEffect(() => {
+    if (user?.id) loadSavedSearches(true);
+  }, [user?.id, loadSavedSearches]);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (q && q.trim().length >= 2) {
+      setSearchQuery(q);
+      handleSearch(q);
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps -- run once when ?q= changes
+
+  useEffect(() => {
+    if (!hasSearched || businessResults.length === 0) return;
+    businessResults.forEach((b) => {
+      businessAnalyticsService.recordEvent(b.id, "impression");
+    });
+  }, [hasSearched, businessResults]);
+
+  const handleSaveSearch = async () => {
+    if (!user?.id) {
+      showNotification("Sign in to save searches", "error");
+      return;
+    }
+    const q = searchQuery.trim();
+    if (!isValidSearch()) return;
+    if (isQuerySaved(q)) {
+      showNotification("This search is already saved", "info");
+      return;
+    }
+    await saveSearch({
+      query: q,
+      peopleCount: peopleResults.length,
+      businessCount: businessResults.length,
+    });
   };
 
   const hasResults = peopleResults.length > 0 || businessResults.length > 0;
+  const querySaved = isQuerySaved(searchQuery);
 
   return (
-    <PageLayout maxWidth="lg" showAuthButtons={false}>
+    <PageLayout maxWidth="lg">
       <PageHeader
         icon="pi pi-search"
         title="Search"
-        description="Find people by name or number, and businesses (e.g. kirana shop, plumber, hotel)"
-        variant="centered"
+        description="Find people by name or number, and local businesses"
+        action={
+          user ? (
+            <Link to="/saved-searches" className="resend-btn resend-btn-secondary app-search-saved-link">
+              <i className="pi pi-bookmark" />
+              Saved searches
+            </Link>
+          ) : undefined
+        }
       />
 
-      <GlassCard hover padding="lg" variant="default">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-sky-500/5 to-cyan-500/5 opacity-50"></div>
-        <div className="relative flex flex-col gap-6">
-          <div className="flex gap-4 items-stretch">
-            <div className="flex-1 relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/10 to-cyan-500/10 rounded-2xl blur opacity-0 group-focus-within:opacity-100 transition-opacity duration-300"></div>
-              <InputText
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search people or businesses... e.g. name, kirana shop, plumber, hotel"
-                className="w-full input-standard px-6 py-4 text-lg bg-bg-secondary/50 backdrop-blur-sm border-2 border-white/10 rounded-2xl focus:border-primary transition-all h-full"
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && isValidSearch()) handleSearch();
-                }}
-                disabled={loading}
-              />
-            </div>
-            <Button
-              label={loading ? "Searching..." : "Search"}
-              icon={loading ? "pi pi-spin pi-spinner" : "pi pi-search"}
-              onClick={handleSearch}
-              disabled={!searchQuery.trim() || loading}
-              variant="gradient"
-              Size="medium"
-            />
+      {user ? (
+        <section className="app-panel app-discovery-radius-panel">
+          <div className="app-panel-head">
+            <h2 className="app-panel-title app-panel-title--sm">
+              <i className="pi pi-compass" />
+              Search radius
+            </h2>
+            <p className="app-panel-copy m-0">
+              Showing results within{" "}
+              <strong>{discoveryRadiusLabel(discoveryRadius)}</strong>
+            </p>
           </div>
-        </div>
-      </GlassCard>
+          <DiscoveryRadiusControl
+            value={discoveryRadius}
+            onChange={setDiscoveryRadius}
+            isPremium={!!isPremium}
+            compact
+            onPremiumBlocked={() =>
+              showNotification("Premium required for radius beyond 2 km", "info")
+            }
+          />
+        </section>
+      ) : null}
 
-      {hasResults && (
-        <div className="mt-8 space-y-8">
-          {peopleResults.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-black text-text-primary bg-gradient-to-r from-primary to-cyan-600 bg-clip-text text-transparent">
-                  People
-                </h2>
-                <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-semibold rounded-full">
-                  {peopleResults.length} result{peopleResults.length !== 1 ? "s" : ""}
-                </span>
+      <section className="app-panel app-search-bar">
+        <div className="app-search-bar-inner">
+          <InputText
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Name, phone, shop, plumber, hotel…"
+            className="auth-resend-input app-search-input"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && isValidSearch()) handleSearch();
+            }}
+            disabled={loading}
+          />
+          <button
+            type="button"
+            className="resend-btn resend-btn-primary app-search-submit"
+            onClick={() => handleSearch()}
+            disabled={!searchQuery.trim() || loading}
+          >
+            {loading ? <i className="pi pi-spin pi-spinner" /> : <i className="pi pi-search" />}
+            <span className="hidden sm:inline">Search</span>
+          </button>
+        </div>
+        <div className="app-search-bar-footer">
+          <p className="app-search-hint m-0">
+            Try a name, 10-digit mobile number, or business keyword
+          </p>
+          {hasSearched && isValidSearch() && user ? (
+            <button
+              type="button"
+              className={`resend-btn resend-btn-secondary app-search-save-btn ${querySaved ? "is-saved" : ""}`}
+              onClick={handleSaveSearch}
+              disabled={saving || querySaved}
+            >
+              {saving ? (
+                <i className="pi pi-spin pi-spinner" />
+              ) : (
+                <i className={`pi ${querySaved ? "pi-check" : "pi-bookmark"}`} />
+              )}
+              {querySaved ? "Saved" : "Save search"}
+            </button>
+          ) : null}
+        </div>
+      </section>
+
+      {loading ? <LoadingState message="Searching…" /> : null}
+
+      {!loading && hasResults ? (
+        <div className="app-results-stack">
+          {peopleResults.length > 0 ? (
+            <section>
+              <div className="app-section-head">
+                <h2 className="app-section-title">People</h2>
+                <span className="resend-pill">{peopleResults.length}</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {peopleResults.map((result, index) => (
-                  <div
+              <div className="app-result-grid">
+                {peopleResults.map((result) => (
+                  <button
                     key={`user-${result.id}`}
-                    className="group relative"
+                    type="button"
+                    className={`app-result-card ${result.isPremium ? "app-result-card--premium" : ""}`}
+                    onClick={() => navigate(`/profile/${result.id}`)}
                   >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div
-                      className={`relative backdrop-blur-xl rounded-2xl p-6 border shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer transform hover:-translate-y-1 bg-bg-primary/70 ${
-                        result.isPremium ? "border-amber-500" : "border-white/10"
-                      }`}
-                      onClick={() => navigate(`/profile/${result.id}`)}
-                    >
-                      <div className="flex items-start gap-4">
-                        <div className="p-3 bg-gradient-to-br from-primary to-cyan-600 rounded-xl shadow-lg">
-                          <i className="pi pi-user text-white text-xl"></i>
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-xl font-black text-text-primary mb-2">
-                            {result.name || "Unknown"}
-                          </h3>
-                          {result.area && result.city && result.state && (
-                            <div className="flex items-center gap-2 text-text-secondary text-sm">
-                              <i className="pi pi-map-marker text-primary"></i>
-                              <span>{result.area}, {result.city}, {result.state}</span>
-                            </div>
-                          )}
-                        </div>
-                        <i className="pi pi-arrow-right text-2xl text-text-tertiary opacity-0 group-hover:opacity-100 transition-all"></i>
-                      </div>
-                    </div>
-                  </div>
+                    <span className="header-app-avatar">
+                      {(result.name || "U")[0].toUpperCase()}
+                    </span>
+                    <span className="app-result-card-body">
+                      <span className="app-result-card-title">{result.name || "Unknown"}</span>
+                      {result.area && result.city && result.state ? (
+                        <span className="app-result-card-meta">
+                          <i className="pi pi-map-marker" />
+                          {result.area}, {result.city}
+                        </span>
+                      ) : null}
+                    </span>
+                    <i className="pi pi-arrow-right app-result-card-arrow" />
+                  </button>
                 ))}
               </div>
-            </div>
-          )}
+            </section>
+          ) : null}
 
-          {businessResults.length > 0 && (
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-black text-text-primary bg-gradient-to-r from-primary to-cyan-600 bg-clip-text text-transparent">
-                  Businesses
-                </h2>
-                <span className="px-3 py-1 bg-primary/20 text-primary text-sm font-semibold rounded-full">
-                  {businessResults.length} result{businessResults.length !== 1 ? "s" : ""}
-                </span>
+          {businessResults.length > 0 ? (
+            <section>
+              <div className="app-section-head">
+                <h2 className="app-section-title">Businesses</h2>
+                <span className="resend-pill">{businessResults.length}</span>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="app-result-grid">
                 {businessResults.map((b) => (
-                  <div
+                  <button
                     key={`business-${b.id}`}
-                    className="group relative"
+                    type="button"
+                    className="app-result-card"
+                    onClick={() => navigate(`/businesses/${b.id}`)}
                   >
-                    <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <div
-                      className="relative backdrop-blur-xl rounded-2xl p-6 border border-white/10 shadow-xl hover:shadow-2xl transition-all cursor-pointer transform hover:-translate-y-1 bg-bg-primary/70"
-                      onClick={() => navigate(`/businesses/${b.id}`)}
-                    >
-                      <div className="flex items-start justify-between gap-2 mb-2">
-                        <h3 className="text-lg font-bold text-text-primary truncate flex-1">
-                          {b.name}
-                        </h3>
-                        <span className="px-2 py-0.5 rounded-lg bg-primary/20 text-primary text-xs font-semibold flex-shrink-0">
+                    <span className="app-action-icon">
+                      <i className="pi pi-briefcase" />
+                    </span>
+                    <span className="app-result-card-body">
+                      <span className="app-result-card-title-row">
+                        <span className="app-result-card-title">{b.name}</span>
+                        <span className="resend-pill resend-pill--compact">
                           {CATEGORY_LABELS[b.category] || b.category}
                         </span>
-                      </div>
-                      <p className="text-text-secondary text-sm line-clamp-2 mb-2">
-                        {b.description}
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {b.aadharVerified && (
-                          <span className="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-600 text-xs">Aadhar ✓</span>
-                        )}
-                        {b.licenceVerified && (
-                          <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-600 text-xs">Licence ✓</span>
-                        )}
-                      </div>
-                      {b.address && (
-                        <p className="text-text-tertiary text-xs mt-2 flex items-center gap-1">
-                          <i className="pi pi-map-marker"></i>
+                      </span>
+                      <span className="app-result-card-desc">{b.description}</span>
+                      {b.address ? (
+                        <span className="app-result-card-meta">
+                          <i className="pi pi-map-marker" />
                           {b.address}
-                        </p>
-                      )}
-                      <p className="text-primary text-sm font-semibold mt-2">View details →</p>
-                    </div>
-                  </div>
+                        </span>
+                      ) : null}
+                    </span>
+                    <i className="pi pi-arrow-right app-result-card-arrow" />
+                  </button>
                 ))}
               </div>
-            </div>
-          )}
+            </section>
+          ) : null}
         </div>
-      )}
+      ) : null}
 
-      {!loading && searchQuery && isValidSearch() && !hasResults && (
+      {!loading && hasSearched && !hasResults ? (
         <EmptyState
           icon="pi pi-search"
           title="No results found"
-          description="Try a different search (name, number, or business keyword like shop, plumber, hotel)"
-          size="medium"
+          description="Try a different name, number, or business keyword — you can still save this search to get alerts later"
+          action={
+            user && isValidSearch() && !querySaved
+              ? { label: "Save this search", icon: "pi pi-bookmark", onClick: handleSaveSearch }
+              : undefined
+          }
         />
-      )}
+      ) : null}
 
-      {!searchQuery && !loading && (
+      {!loading && !hasSearched ? (
         <EmptyState
-          icon="pi pi-search"
-          title="Search people and businesses"
-          description="Enter a name, phone number, or keyword (e.g. kirana shop, plumber, hotel, restaurant)"
-          size="medium"
+          icon="pi pi-compass"
+          title="Discover your network"
+          description="Search for people nearby or local businesses like shops, plumbers, and restaurants"
         />
-      )}
+      ) : null}
     </PageLayout>
   );
 }

@@ -6,7 +6,8 @@ import {
 import { showNotification } from "@/components";
 
 export const useLogin = () => {
-  const [loading, setLoading] = useState(false);
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sendOTP = useCallback(
@@ -18,7 +19,7 @@ export const useLogin = () => {
         return false;
       }
 
-      setLoading(true);
+      setSendingOtp(true);
       setError(null);
 
       try {
@@ -37,7 +38,7 @@ export const useLogin = () => {
         showNotification(errorMessage, "error");
         return false;
       } finally {
-        setLoading(false);
+        setSendingOtp(false);
       }
     },
     []
@@ -52,7 +53,7 @@ export const useLogin = () => {
         return null;
       }
 
-      setLoading(true);
+      setVerifyingOtp(true);
       setError(null);
 
       try {
@@ -70,7 +71,7 @@ export const useLogin = () => {
         showNotification(errorMessage, "error");
         return null;
       } finally {
-        setLoading(false);
+        setVerifyingOtp(false);
       }
     },
     []
@@ -81,7 +82,9 @@ export const useLogin = () => {
   }, []);
 
   return {
-    loading,
+    sendingOtp,
+    verifyingOtp,
+    loading: sendingOtp || verifyingOtp,
     error,
     sendOTP,
     verifyOTP,

@@ -1,8 +1,19 @@
-import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Header, Button, showNotification, NetworkBackground } from "@/components";
+import { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
+import {
+  PageLayout,
+  PageHeader,
+  showNotification,
+  LoadingState,
+  BusinessAnalyticsCharts,
+} from "@/components";
 import { businessService } from "@/services/businessService/businessService";
+import { businessAnalyticsService } from "@/services/businessAnalyticsService/businessAnalyticsService";
+import { messagingService } from "@/services/messagingService/messagingService";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import type { Business } from "@/services/businessService/businessService";
+import type { BusinessAnalytics } from "@/services/businessAnalyticsService/businessAnalyticsService";
 
 const CATEGORY_LABELS: Record<string, string> = {
   restaurant: "Restaurant",
@@ -14,8 +25,20 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default function BusinessDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { subscription } = useSubscription(user?.id ?? null, !!user?.id);
   const [business, setBusiness] = useState<Business | null>(null);
   const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<BusinessAnalytics | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [sendingRequest, setSendingRequest] = useState(false);
+
+  const isOwner = user?.id != null && business?.userId === user.id;
+  const isPremium =
+    subscription?.status === "active" &&
+    subscription?.plan &&
+    !subscription.plan.isDefault &&
+    subscription.plan.price > 0;
 
   useEffect(() => {
     if (!id) return;
@@ -24,168 +47,214 @@ export default function BusinessDetail() {
         const b = await businessService.getBusinessById(Number(id));
         setBusiness(b);
       } catch (e: any) {
-        showNotification(
-          e.response?.data?.error || "Business not found",
-          "error"
-        );
-        navigate("/businesses");
+        showNotification(e.response?.data?.error || "Business not found", "error");
+        navigate("/search");
       } finally {
         setLoading(false);
       }
     })();
   }, [id, navigate]);
 
+  useEffect(() => {
+    if (!business || isOwner || !user) return;
+    businessAnalyticsService.recordEvent(business.id, "profile_click");
+  }, [business?.id, isOwner, user?.id]);
+
+  const loadAnalytics = useCallback(async () => {
+    if (!business || !isOwner || !isPremium) return;
+    setAnalyticsLoading(true);
+    try {
+      const data = await businessAnalyticsService.getAnalytics(business.id, 30);
+      setAnalytics(data);
+    } catch (e: any) {
+      const msg = e.response?.data?.message || "Failed to load analytics";
+      showNotification(msg, "error");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  }, [business?.id, isOwner, isPremium]);
+
+  useEffect(() => {
+    if (isOwner && isPremium && business) {
+      loadAnalytics();
+    }
+  }, [isOwner, isPremium, business, loadAnalytics]);
+
+  const handleMessageOwner = async () => {
+    if (!business || !user || isOwner) return;
+    setSendingRequest(true);
+    try {
+      await messagingService.sendChatRequest({ receiverId: business.userId });
+      await businessAnalyticsService.recordEvent(business.id, "message_request");
+      showNotification("Chat request sent to the business owner", "success");
+    } catch (e: any) {
+      const msg = e.response?.data?.message || "Failed to send chat request";
+      showNotification(msg, "error");
+    } finally {
+      setSendingRequest(false);
+    }
+  };
+
   if (loading || !business) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-        <NetworkBackground />
-        <Header showAuthButtons={false} />
-        <div className="flex-1 flex items-center justify-center relative z-10">
-          <i className="pi pi-spin pi-spinner text-5xl text-primary"></i>
-        </div>
-      </div>
+      <PageLayout maxWidth="md">
+        <LoadingState message="Loading business…" />
+      </PageLayout>
     );
   }
 
   const hoursStr =
     business.businessHours && (business.businessHours as { display?: string }).display
       ? (business.businessHours as { display: string }).display
-      : business.businessHours && typeof (business.businessHours as { general?: string }).general === "string"
-      ? (business.businessHours as { general: string }).general
-      : business.businessHours
-      ? Object.entries(business.businessHours)
-          .map(([k, v]) => `${k}: ${v}`)
-          .join(", ")
-      : null;
+      : business.businessHours &&
+          typeof (business.businessHours as { general?: string }).general === "string"
+        ? (business.businessHours as { general: string }).general
+        : business.businessHours
+          ? Object.entries(business.businessHours)
+              .map(([k, v]) => `${k}: ${v}`)
+              .join(", ")
+          : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
-      <NetworkBackground />
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-0 -left-1/4 w-[600px] h-[600px] bg-gradient-to-br from-primary/20 to-cyan-500/20 rounded-full blur-3xl"></div>
-      </div>
+    <PageLayout maxWidth="md">
+      <button type="button" className="resend-btn resend-btn-secondary self-start" onClick={() => navigate(-1)}>
+        <i className="pi pi-arrow-left" />
+        Back
+      </button>
 
-      <Header showAuthButtons={false} />
-
-      <div className="flex-1 max-w-[800px] w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col gap-6 relative z-10">
-        <div className="relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-cyan-500/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-          <div className="relative backdrop-blur-xl bg-bg-primary/70 rounded-3xl border border-white/10 shadow-2xl overflow-hidden">
-            <div className="p-6 sm:p-8">
-              <button
-                type="button"
-                onClick={() => navigate("/businesses")}
-                className="flex items-center gap-2 text-text-secondary hover:text-primary mb-6"
-              >
-                <i className="pi pi-arrow-left"></i>
-                <span className="text-sm font-semibold">Back to businesses</span>
-              </button>
-
-              <div className="flex flex-wrap items-center gap-2 mb-4">
-                <h1 className="text-2xl sm:text-3xl font-black text-text-primary">
-                  {business.name}
-                </h1>
-                <span className="px-3 py-1 rounded-xl bg-primary/20 text-primary text-sm font-semibold">
-                  {CATEGORY_LABELS[business.category] || business.category}
-                </span>
-                {business.aadharVerified && (
-                  <span className="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-600 text-xs font-semibold">
-                    Aadhar verified
-                  </span>
-                )}
-                {business.licenceVerified && (
-                  <span className="px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-600 text-xs font-semibold">
-                    Licence verified
-                  </span>
-                )}
-              </div>
-
-              <p className="text-text-secondary whitespace-pre-wrap mb-6">
-                {business.description}
-              </p>
-
-              {(business.address || (business.latitude != null && business.longitude != null)) && (
-                <div className="flex items-start gap-3 mb-4">
-                  <i className="pi pi-map-marker text-primary mt-0.5"></i>
-                  <div>
-                    <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
-                      Address
-                    </p>
-                    {business.address && (
-                      <p className="text-text-primary">{business.address}</p>
-                    )}
-                    {business.latitude != null && business.longitude != null && (
-                      <a
-                        href={`https://www.google.com/maps?q=${business.latitude},${business.longitude}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 text-primary font-semibold hover:underline mt-1"
-                      >
-                        <i className="pi pi-map"></i>
-                        <span>View on map</span>
-                      </a>
-                    )}
-                  </div>
-                </div>
+      <PageHeader
+        icon="pi pi-briefcase"
+        title={business.name}
+        description={CATEGORY_LABELS[business.category] || business.category}
+        action={
+          isOwner ? (
+            <button
+              type="button"
+              className="resend-btn resend-btn-secondary"
+              onClick={() => navigate(`/business/${business.id}/edit`)}
+            >
+              <i className="pi pi-pencil" />
+              Edit
+            </button>
+          ) : user ? (
+            <button
+              type="button"
+              className="resend-btn resend-btn-primary"
+              onClick={handleMessageOwner}
+              disabled={sendingRequest}
+            >
+              {sendingRequest ? (
+                <i className="pi pi-spin pi-spinner" />
+              ) : (
+                <i className="pi pi-comments" />
               )}
+              Message owner
+            </button>
+          ) : undefined
+        }
+      />
 
-              {hoursStr && (
-                <div className="flex items-start gap-3 mb-4">
-                  <i className="pi pi-clock text-primary mt-0.5"></i>
-                  <div>
-                    <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wide">
-                      Business hours
-                    </p>
-                    <p className="text-text-primary">{hoursStr}</p>
-                  </div>
-                </div>
-              )}
-
-              {(business.website || (business.socialLinks && Object.keys(business.socialLinks).length > 0)) && (
-                <div className="flex items-start gap-3 mb-4">
-                  <i className="pi pi-link text-primary mt-0.5"></i>
-                  <div className="flex flex-wrap gap-3">
-                    {business.website && (
-                      <a
-                        href={business.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary font-semibold hover:underline"
-                      >
-                        Website
-                      </a>
-                    )}
-                    {business.socialLinks?.facebook && (
-                      <a
-                        href={business.socialLinks.facebook}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary font-semibold hover:underline"
-                      >
-                        Facebook
-                      </a>
-                    )}
-                    {business.socialLinks?.instagram && (
-                      <a
-                        href={business.socialLinks.instagram}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary font-semibold hover:underline"
-                      >
-                        Instagram
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <p className="text-text-tertiary text-sm mt-4">
-                Listed by {business.user?.name || "User"}
-              </p>
-            </div>
+      {isOwner ? (
+        <section className="app-panel app-business-analytics-panel">
+          <div className="app-panel-head">
+            <h2 className="app-panel-title">
+              <i className="pi pi-chart-bar" />
+              Listing analytics
+              <span className="resend-pill resend-pill--premium">Premium</span>
+            </h2>
+            <p className="app-panel-copy">
+              Views, profile clicks, and message requests in the last 30 days.
+            </p>
           </div>
+          {!isPremium ? (
+            <div className="app-business-analytics-upsell">
+              <p>Upgrade to premium to see how neighbours discover and contact your business.</p>
+              <Link to="/subscription" className="resend-btn resend-btn-primary">
+                <i className="pi pi-star" />
+                View plans
+              </Link>
+            </div>
+          ) : analyticsLoading ? (
+            <LoadingState message="Loading analytics…" />
+          ) : analytics ? (
+            <BusinessAnalyticsCharts analytics={analytics} />
+          ) : null}
+        </section>
+      ) : null}
+
+      <section className="app-panel">
+        <div className="flex flex-wrap gap-2 mb-4">
+          {business.aadharVerified ? <span className="resend-pill resend-pill--success">Aadhar verified</span> : null}
+          {business.licenceVerified ? <span className="resend-pill resend-pill--success">Licence verified</span> : null}
         </div>
-      </div>
-    </div>
+
+        <p className="text-sm text-text-secondary whitespace-pre-wrap mb-5">{business.description}</p>
+
+        <div className="app-form-grid">
+          {business.address ? (
+            <div className="app-profile-field span-2">
+              <p className="app-profile-field-label">Address</p>
+              <p className="app-profile-field-value">{business.address}</p>
+              {business.latitude != null && business.longitude != null ? (
+                <a
+                  href={`https://www.google.com/maps?q=${business.latitude},${business.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-[#ff6000] hover:underline mt-2 inline-flex items-center gap-1"
+                >
+                  <i className="pi pi-map" />
+                  View on map
+                </a>
+              ) : null}
+            </div>
+          ) : null}
+
+          {hoursStr ? (
+            <div className="app-profile-field span-2">
+              <p className="app-profile-field-label">Business hours</p>
+              <p className="app-profile-field-value">{hoursStr}</p>
+            </div>
+          ) : null}
+
+          {business.website ? (
+            <div className="app-profile-field">
+              <p className="app-profile-field-label">Website</p>
+              <a href={business.website} target="_blank" rel="noopener noreferrer" className="text-[#ff6000] text-sm">
+                Visit site
+              </a>
+            </div>
+          ) : null}
+
+          {business.socialLinks?.facebook ? (
+            <div className="app-profile-field">
+              <p className="app-profile-field-label">Facebook</p>
+              <a href={business.socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-[#ff6000] text-sm">
+                Profile
+              </a>
+            </div>
+          ) : null}
+
+          {business.socialLinks?.instagram ? (
+            <div className="app-profile-field">
+              <p className="app-profile-field-label">Instagram</p>
+              <a href={business.socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-[#ff6000] text-sm">
+                Profile
+              </a>
+            </div>
+          ) : null}
+        </div>
+
+        <p className="text-xs text-text-secondary mt-5 mb-0">
+          Listed by{" "}
+          <button
+            type="button"
+            className="text-[#ff6000] hover:underline"
+            onClick={() => navigate(`/profile/${business.userId}`)}
+          >
+            {business.user?.name || "User"}
+          </button>
+        </p>
+      </section>
+    </PageLayout>
   );
 }

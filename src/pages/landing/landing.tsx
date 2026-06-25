@@ -1,62 +1,106 @@
 import { useState } from "react";
-import { Header, AnimatedBackground, ConnectedPeopleSection } from "@/components";
+
+import { Header, ConnectedPeopleSection } from "@/components";
+
 import StartupNoticeModal from "@/components/StartupNoticeModal";
+
 import {
+
   HeroSection,
+
   CommunityStatsSection,
+
+  ShippedModulesSection,
+
   HowChecknownHelpsSection,
+
   ProductHighlightsSection,
+
   HowItWorksSection,
+
   UseCasesSection,
+
   MobileAppSection,
+
+  PricingSnapshotSection,
+
   FinalCtaSection,
+
   FooterSection,
+
 } from "./sections";
 
+
+
 export default function Landing() {
+
   const [showStartupNotice, setShowStartupNotice] = useState(true);
 
+
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-bg-secondary via-bg-secondary to-bg-tertiary flex flex-col relative overflow-hidden">
+
+    <div className="landing-resend min-h-screen flex flex-col relative overflow-x-hidden">
+
       <StartupNoticeModal
+
         visible={showStartupNotice}
+
         onHide={() => setShowStartupNotice(false)}
+
       />
 
-      {/* Lightweight visual background effect */}
-      <AnimatedBackground variant="minimal" />
 
-      <Header />
 
-      {/* Hero Section */}
-      <HeroSection />
+      <div className="landing-resend-bg pointer-events-none" aria-hidden="true">
 
-      {/* Connected People Section */}
-      <ConnectedPeopleSection />
+        <div className="landing-resend-ray landing-resend-ray-left" />
 
-      {/* Community Stats Section */}
-      <CommunityStatsSection />
+        <div className="landing-resend-ray landing-resend-ray-right" />
 
-      {/* How Checknown Helps Section */}
-      <HowChecknownHelpsSection />
+        <div className="landing-resend-glow landing-resend-glow-top" />
 
-      {/* Product Highlights Section */}
-      <ProductHighlightsSection />
+        <div className="landing-resend-glow landing-resend-glow-bottom" />
 
-      {/* How It Works Section */}
-      <HowItWorksSection />
+      </div>
 
-      {/* Use Cases Section */}
-      <UseCasesSection />
 
-      {/* Mobile App Section */}
-      <MobileAppSection />
 
-      {/* Final CTA Section */}
-      <FinalCtaSection />
+      <div className="landing-resend-content flex flex-col flex-1">
 
-      {/* Footer Section */}
-      <FooterSection />
+        <Header />
+
+
+
+        <HeroSection />
+
+        <ConnectedPeopleSection />
+
+        <ShippedModulesSection />
+
+        <CommunityStatsSection />
+
+        <HowChecknownHelpsSection />
+
+        <ProductHighlightsSection />
+
+        <HowItWorksSection />
+
+        <UseCasesSection />
+
+        <MobileAppSection />
+
+        <PricingSnapshotSection />
+
+        <FinalCtaSection />
+
+        <FooterSection />
+
+      </div>
+
     </div>
+
   );
+
 }
+
