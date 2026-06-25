@@ -27,6 +27,12 @@ import NumberRevealRequests from "./pages/number-reveal-requests/number-reveal-r
 import BusinessList from "./pages/business/business-list";
 import BusinessForm from "./pages/business/business-form";
 import BusinessDetail from "./pages/business/business-detail";
+import InviteNeighbors from "./pages/invite/invite";
+import Events from "./pages/events/events";
+import CreateEvent from "./pages/events/create";
+import EventDetail from "./pages/events/detail";
+import LocalFeed from "./pages/feed/feed";
+import SavedSearches from "./pages/saved-searches/saved-searches";
 
 
 import "primereact/resources/primereact.min.css";
@@ -84,6 +90,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <Search />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/saved-searches"
+        element={
+          <ProtectedRoute>
+            <SavedSearches />
           </ProtectedRoute>
         }
       />
@@ -182,6 +196,54 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <NumberRevealRequests />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/feed"
+        element={
+          <ProtectedRoute>
+            <LocalFeed />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events"
+        element={
+          <ProtectedRoute>
+            <Events />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/create"
+        element={
+          <ProtectedRoute>
+            <CreateEvent />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/:id/edit"
+        element={
+          <ProtectedRoute>
+            <CreateEvent />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/events/:id"
+        element={
+          <ProtectedRoute>
+            <EventDetail />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/invite"
+        element={
+          <ProtectedRoute>
+            <InviteNeighbors />
           </ProtectedRoute>
         }
       />

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { Announcement, ReactionType } from "@/services/announcementService/announcementService";
+import { announcementCategoryLabel } from "@/services/announcementService/announcementService";
 
 interface AnnouncementCardProps {
   announcement: Announcement;
@@ -83,6 +84,11 @@ export default function AnnouncementCard({
         ) : null}
 
         <div className="app-announcement-card-body">
+          <div className="app-announcement-card-top">
+            <span className={`app-announcement-category app-announcement-category--${announcement.category}`}>
+              {announcementCategoryLabel(announcement.category)}
+            </span>
+          </div>
           <h3 className="app-announcement-card-title">{announcement.title}</h3>
           <p className="app-announcement-card-desc">{announcement.description}</p>
 

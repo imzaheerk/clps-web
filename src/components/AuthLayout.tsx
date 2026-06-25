@@ -8,7 +8,7 @@ export default function AuthLayout() {
   const isSignup = location.pathname === "/signup";
 
   return (
-    <div className="auth-resend min-h-screen bg-black text-[#f8fafc] relative overflow-hidden">
+    <div className="auth-resend min-h-screen relative overflow-hidden">
       <div className="landing-resend-bg pointer-events-none" aria-hidden="true">
         <div className="landing-resend-ray landing-resend-ray-left" />
         <div className="landing-resend-ray landing-resend-ray-right" />

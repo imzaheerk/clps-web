@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
+import { useDeferredTheme } from "@/hooks/useDeferredTheme";
 
 const EARTH_RADIUS = 2.05;
 
@@ -13,7 +14,8 @@ const TEXTURES = {
   clouds: "https://cdn.jsdelivr.net/npm/three-globe/example/img/earth-clouds.png",
 };
 
-const NEON = [0x22d3ee, 0x3b82f6, 0xa855f7, 0xec4899, 0x10b981, 0xf97316];
+const NEON_DARK = [0x22d3ee, 0x3b82f6, 0xa855f7, 0xec4899, 0x10b981, 0xf97316];
+const NEON_LIGHT = [0xff6000, 0xf97316, 0xfbbf24, 0xfb923c, 0x38bdf8, 0x34d399];
 
 const HUBS: { lat: number; lng: number }[] = [
   { lat: 40.7128, lng: -74.006 },
@@ -110,10 +112,18 @@ function pickConnections(count: number): [number, number][] {
  */
 export default function HeroGlobeModel() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { renderTheme, opacity } = useDeferredTheme();
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
+    const isLight = renderTheme === "light";
+    const NEON = isLight ? NEON_LIGHT : NEON_DARK;
+    const skyColor = isLight ? 0xfafaf9 : 0x02040c;
+    const atmosphereA = isLight ? 0xff8a3d : 0x22d3ee;
+    const atmosphereB = isLight ? 0xfbbf24 : 0xa855f7;
+    const outerGlowColor = isLight ? 0xffb347 : 0x6366f1;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const isMobile = window.innerWidth < 768;
@@ -124,8 +134,13 @@ export default function HeroGlobeModel() {
     let disposed = false;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x02040c);
-    scene.fog = new THREE.FogExp2(0x02040c, 0.045);
+    if (isLight) {
+      scene.background = null;
+      scene.fog = new THREE.FogExp2(skyColor, 0.012);
+    } else {
+      scene.background = new THREE.Color(skyColor);
+      scene.fog = new THREE.FogExp2(skyColor, 0.045);
+    }
 
     const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 120);
     camera.position.set(0.35, 0.55, 5.85);
@@ -133,13 +148,16 @@ export default function HeroGlobeModel() {
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
-      alpha: false,
+      alpha: isLight,
       powerPreference: "high-performance",
     });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.15;
+    renderer.toneMappingExposure = isLight ? 1.24 : 1.15;
+    if (isLight) {
+      renderer.setClearColor(0x000000, 0);
+    }
     container.appendChild(renderer.domElement);
 
     const canvas = renderer.domElement;
@@ -149,20 +167,25 @@ export default function HeroGlobeModel() {
 
     const composer = new EffectComposer(renderer);
     composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), 0.62, 0.38, 0.18);
+    const bloom = new UnrealBloomPass(
+      new THREE.Vector2(1, 1),
+      isLight ? 0.48 : 0.62,
+      isLight ? 0.38 : 0.38,
+      isLight ? 0.32 : 0.18
+    );
     composer.addPass(bloom);
 
-    scene.add(new THREE.AmbientLight(0x1a2a44, 0.35));
+    scene.add(new THREE.AmbientLight(isLight ? 0xfff7ed : 0x1a2a44, isLight ? 0.72 : 0.35));
 
-    const sun = new THREE.DirectionalLight(0xfff4e6, 1.35);
+    const sun = new THREE.DirectionalLight(isLight ? 0xffffff : 0xfff4e6, isLight ? 1.55 : 1.35);
     sun.position.set(-4.5, 2.2, 5.5);
     scene.add(sun);
 
-    const rim = new THREE.DirectionalLight(0x38bdf8, 0.55);
+    const rim = new THREE.DirectionalLight(isLight ? 0xffedd5 : 0x38bdf8, isLight ? 0.35 : 0.55);
     rim.position.set(5, 1.5, -3);
     scene.add(rim);
 
-    const fill = new THREE.PointLight(0xa855f7, 0.45, 30);
+    const fill = new THREE.PointLight(isLight ? 0xff6000 : 0xa855f7, isLight ? 0.48 : 0.45, 30);
     fill.position.set(-2, -1.5, 4);
     scene.add(fill);
 
@@ -183,14 +206,14 @@ export default function HeroGlobeModel() {
     const earthMat = new THREE.MeshPhysicalMaterial({
       map: texDay,
       bumpMap: texBump,
-      bumpScale: 0.045,
-      emissive: new THREE.Color(0x0a1628),
+      bumpScale: isLight ? 0.035 : 0.045,
+      emissive: new THREE.Color(isLight ? 0x1c1917 : 0x0a1628),
       emissiveMap: texNight,
-      emissiveIntensity: 1.35,
-      roughness: 0.82,
-      metalness: 0.08,
-      clearcoat: 0.12,
-      clearcoatRoughness: 0.4,
+      emissiveIntensity: isLight ? 0.58 : 1.35,
+      roughness: isLight ? 0.78 : 0.82,
+      metalness: isLight ? 0.04 : 0.08,
+      clearcoat: isLight ? 0.22 : 0.12,
+      clearcoatRoughness: isLight ? 0.35 : 0.4,
     });
     const earth = new THREE.Mesh(earthGeo, earthMat);
     earthGroup.add(earth);
@@ -199,7 +222,7 @@ export default function HeroGlobeModel() {
     const cloudMat = new THREE.MeshPhongMaterial({
       map: texClouds,
       transparent: true,
-      opacity: 0.38,
+      opacity: isLight ? 0.38 : 0.38,
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
@@ -218,13 +241,15 @@ export default function HeroGlobeModel() {
       fragmentShader: `
         varying vec3 vNormal;
         uniform vec3 glowColor;
+        uniform float glowStrength;
         void main() {
           float intensity = pow(0.68 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 2.8);
-          gl_FragColor = vec4(glowColor, 1.0) * intensity;
+          gl_FragColor = vec4(glowColor, 1.0) * intensity * glowStrength;
         }
       `,
       uniforms: {
-        glowColor: { value: new THREE.Color(0x22d3ee) },
+        glowColor: { value: new THREE.Color(atmosphereA) },
+        glowStrength: { value: isLight ? 1.85 : 1.0 },
       },
       side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
@@ -240,13 +265,15 @@ export default function HeroGlobeModel() {
       fragmentShader: `
         varying vec3 vNormal;
         uniform vec3 glowColor;
+        uniform float glowStrength;
         void main() {
           float intensity = pow(0.52 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.2);
-          gl_FragColor = vec4(glowColor, 1.0) * intensity * 0.35;
+          gl_FragColor = vec4(glowColor, 1.0) * intensity * 0.35 * glowStrength;
         }
       `,
       uniforms: {
-        glowColor: { value: new THREE.Color(0x6366f1) },
+        glowColor: { value: new THREE.Color(outerGlowColor) },
+        glowStrength: { value: isLight ? 1.6 : 1.0 },
       },
       side: THREE.BackSide,
       blending: THREE.AdditiveBlending,
@@ -255,7 +282,7 @@ export default function HeroGlobeModel() {
     });
     earthGroup.add(new THREE.Mesh(outerGlowGeo, outerGlowMat));
 
-    const starCount = isMobile ? 1200 : 2800;
+    const starCount = isLight ? (isMobile ? 500 : 900) : isMobile ? 1200 : 2800;
     const starPos = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount; i += 1) {
       const r = 28 + Math.random() * 42;
@@ -270,17 +297,17 @@ export default function HeroGlobeModel() {
     const stars = new THREE.Points(
       starGeo,
       new THREE.PointsMaterial({
-        color: 0xffffff,
-        size: 0.055,
+        color: isLight ? 0xa8a29e : 0xffffff,
+        size: isLight ? 0.04 : 0.055,
         transparent: true,
-        opacity: 0.75,
+        opacity: isLight ? 0.42 : 0.75,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       })
     );
     scene.add(stars);
 
-    const orbitParticleCount = isMobile ? 400 : 900;
+    const orbitParticleCount = isLight ? (isMobile ? 280 : 520) : isMobile ? 400 : 900;
     const orbitPos = new Float32Array(orbitParticleCount * 3);
     for (let i = 0; i < orbitParticleCount; i += 1) {
       const r = EARTH_RADIUS * (1.18 + Math.random() * 0.55);
@@ -295,10 +322,10 @@ export default function HeroGlobeModel() {
     const orbitParticles = new THREE.Points(
       orbitGeo,
       new THREE.PointsMaterial({
-        color: 0x67e8f9,
-        size: 0.028,
+        color: isLight ? 0xff8c42 : 0x67e8f9,
+        size: isLight ? 0.03 : 0.028,
         transparent: true,
-        opacity: 0.45,
+        opacity: isLight ? 0.48 : 0.45,
         depthWrite: false,
         blending: THREE.AdditiveBlending,
       })
@@ -317,7 +344,7 @@ export default function HeroGlobeModel() {
       const ringMat = new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.85,
+        opacity: isLight ? 0.95 : 0.85,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
@@ -339,7 +366,7 @@ export default function HeroGlobeModel() {
       const haloMat = new THREE.MeshBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.22,
+        opacity: isLight ? 0.38 : 0.22,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
@@ -363,7 +390,7 @@ export default function HeroGlobeModel() {
       const mat = new THREE.LineBasicMaterial({
         color,
         transparent: true,
-        opacity: 0.55,
+        opacity: isLight ? 0.62 : 0.55,
         blending: THREE.AdditiveBlending,
         depthWrite: false,
       });
@@ -410,9 +437,9 @@ export default function HeroGlobeModel() {
     });
 
     const microLineMat = new THREE.LineBasicMaterial({
-      color: 0x38bdf8,
+      color: isLight ? 0xff8c42 : 0x38bdf8,
       transparent: true,
-      opacity: 0.06,
+      opacity: isLight ? 0.1 : 0.06,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
     });
@@ -510,7 +537,7 @@ export default function HeroGlobeModel() {
 
         const lm = conn.line.material as THREE.LineBasicMaterial;
         const fade = conn.fading ? Math.max(0, conn.life) : Math.min(1, conn.life * 1.4);
-        lm.opacity = 0.12 + fade * 0.55;
+        lm.opacity = isLight ? 0.28 + fade * 0.55 : 0.12 + fade * 0.55;
 
         conn.particles.forEach((particle, idx) => {
           if (reducedMotion) return;
@@ -529,8 +556,8 @@ export default function HeroGlobeModel() {
       });
 
       (atmosphereMat.uniforms.glowColor.value as THREE.Color).lerpColors(
-        new THREE.Color(0x22d3ee),
-        new THREE.Color(0xa855f7),
+        new THREE.Color(atmosphereA),
+        new THREE.Color(atmosphereB),
         0.5 + Math.sin(t * 0.35) * 0.5
       );
 
@@ -583,12 +610,13 @@ export default function HeroGlobeModel() {
       composer.dispose();
       renderer.dispose();
     };
-  }, []);
+  }, [renderTheme]);
 
   return (
     <div
       ref={containerRef}
       className="hero-globe-canvas"
+      style={{ opacity }}
       aria-hidden="true"
     />
   );

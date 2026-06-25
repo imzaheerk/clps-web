@@ -17,6 +17,14 @@ const signupHighlights = [
   { value: "Free", label: "No card required to start" },
 ];
 
+const signupServices = [
+  "People search by name or mobile",
+  "Local business discovery",
+  "Community announcements",
+  "Nearby events and RSVPs",
+  "Built-in chat safety controls",
+];
+
 export default function AuthInfoPanel({
   variant = "signup",
   className = "",
@@ -25,7 +33,9 @@ export default function AuthInfoPanel({
 
   return (
     <aside
-      className={`auth-resend-aside hidden lg:flex lg:w-[42%] xl:w-[40%] flex-col justify-center px-8 xl:px-12 py-10 ${className}`.trim()}
+      className={`auth-resend-aside hidden lg:flex lg:w-[42%] xl:w-[40%] flex-col ${
+        isLogin ? "justify-center" : "justify-start"
+      } px-8 xl:px-12 py-10 ${className}`.trim()}
     >
       <div className="auth-resend-aside-inner">
         <div className="auth-resend-kicker">
@@ -89,6 +99,18 @@ export default function AuthInfoPanel({
                   <i className="pi pi-check" />
                   Follow local announcements and updates
                 </li>
+              </ul>
+            </div>
+
+            <div className="auth-resend-aside-panel">
+              <p className="auth-resend-aside-panel-label">Our services</p>
+              <ul className="auth-resend-aside-checklist">
+                {signupServices.map((service) => (
+                  <li key={service}>
+                    <i className="pi pi-check" />
+                    {service}
+                  </li>
+                ))}
               </ul>
             </div>
           </>

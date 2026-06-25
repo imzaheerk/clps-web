@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDeferredTheme } from "@/hooks/useDeferredTheme";
 
 function readCssHexVar(name: string, fallback: string): number {
   if (typeof document === "undefined") {
@@ -13,6 +13,8 @@ function readCssHexVar(name: string, fallback: string): number {
 }
 
 type LotKind = "office" | "home";
+
+const ORANGE = 0xff6000;
 
 type Lot = {
   kind: LotKind;
@@ -31,13 +33,14 @@ const PERSON_NODE_Y = 0.392;
  */
 export default function HeroNetworkModel() {
   const modelContainerRef = useRef<HTMLDivElement>(null);
-  const { theme } = useTheme();
+  const { renderTheme, opacity } = useDeferredTheme();
 
   useEffect(() => {
     const container = modelContainerRef.current;
     if (!container) return;
 
-    const isDark = theme === "dark";
+    const isDark = renderTheme === "dark";
+    const isLight = !isDark;
     const primary = readCssHexVar("--color-primary", "#0ea5e9");
     const primaryLight = readCssHexVar("--color-primary-light", "#38bdf8");
     const primaryDark = readCssHexVar("--color-primary-dark", "#0284c7");
@@ -58,7 +61,7 @@ export default function HeroNetworkModel() {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = isDark ? 1.05 : 1.0;
+    renderer.toneMappingExposure = isDark ? 1.05 : 1.24;
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(renderer.domElement);
@@ -67,17 +70,17 @@ export default function HeroNetworkModel() {
     canvas.style.width = "100%";
     canvas.style.height = "100%";
 
-    scene.add(new THREE.AmbientLight(0xffffff, isDark ? 0.44 : 0.52));
+    scene.add(new THREE.AmbientLight(0xffffff, isDark ? 0.44 : 0.62));
 
     const hemi = new THREE.HemisphereLight(
-      isDark ? 0x6ec8ff : 0xa5d8ff,
-      isDark ? 0x0a0f1a : 0xd4dce8,
-      isDark ? 0.5 : 0.52
+      isDark ? 0x6ec8ff : 0xfff7ed,
+      isDark ? 0x0a0f1a : 0xe7e5e4,
+      isDark ? 0.5 : 0.68
     );
     hemi.position.set(0, 10, 0);
     scene.add(hemi);
 
-    const sun = new THREE.DirectionalLight(0xfff5eb, isDark ? 0.68 : 0.58);
+    const sun = new THREE.DirectionalLight(0xfff5eb, isDark ? 0.68 : 0.92);
     sun.position.set(-7, 14, 9);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1536, 1536);
@@ -97,11 +100,11 @@ export default function HeroNetworkModel() {
     rim.position.set(10, 6, -8);
     scene.add(rim);
 
-    const fill = new THREE.PointLight(primaryLight, isDark ? 0.52 : 0.42, 55);
+    const fill = new THREE.PointLight(primaryLight, isDark ? 0.52 : 0.58, 55);
     fill.position.set(5, 5, 5);
     scene.add(fill);
 
-    const accent = new THREE.PointLight(success, isDark ? 0.42 : 0.34, 48);
+    const accent = new THREE.PointLight(success, isDark ? 0.42 : 0.48, 48);
     accent.position.set(-4, 3, -4);
     scene.add(accent);
 
@@ -112,8 +115,8 @@ export default function HeroNetworkModel() {
 
     const groundGeo = new THREE.PlaneGeometry(64, 64, 1, 1);
     const groundMat = new THREE.ShadowMaterial({
-      opacity: isDark ? 0.32 : 0.2,
-      color: 0x0a1628,
+      opacity: isDark ? 0.32 : 0.38,
+      color: isDark ? 0x0a1628 : 0x57534e,
     });
     const ground = new THREE.Mesh(groundGeo, groundMat);
     ground.rotation.x = -Math.PI / 2;
@@ -149,11 +152,11 @@ export default function HeroNetworkModel() {
     const homeMaterials: THREE.MeshPhysicalMaterial[] = [];
     const roofHomeMaterials: THREE.MeshPhysicalMaterial[] = [];
     const capMat = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(primaryDark).multiplyScalar(isDark ? 0.42 : 0.62),
+      color: new THREE.Color(primaryDark).multiplyScalar(isDark ? 0.42 : 0.72),
       metalness: 0.52,
       roughness: 0.26,
       emissive: new THREE.Color(primary),
-      emissiveIntensity: isDark ? 0.28 : 0.18,
+      emissiveIntensity: isDark ? 0.28 : 0.22,
       clearcoat: 0.5,
       clearcoatRoughness: 0.22,
     });
@@ -164,15 +167,15 @@ export default function HeroNetworkModel() {
         const d = 0.25 + seeded(lot.seed * 17) * 0.12;
         const h = 0.62 + seeded(lot.seed * 19) * 1.35;
         const tint = seeded(lot.seed * 41);
-        const base = isDark ? 0x132036 : 0x9aacbf;
+        const base = isDark ? 0x132036 : 0x64748b;
         const mix = 0.12 + tint * 0.28;
         const c = new THREE.Color(base).lerp(new THREE.Color(primaryDark), mix);
         const mat = new THREE.MeshPhysicalMaterial({
           color: c,
-          metalness: isDark ? 0.4 : 0.3,
-          roughness: isDark ? 0.44 : 0.5,
-          emissive: new THREE.Color(primary),
-          emissiveIntensity: isDark ? 0.055 + seeded(lot.seed) * 0.06 : 0.028 + seeded(lot.seed) * 0.03,
+          metalness: isDark ? 0.4 : 0.22,
+          roughness: isDark ? 0.44 : 0.42,
+          emissive: new THREE.Color(isLight ? ORANGE : primary),
+          emissiveIntensity: isDark ? 0.055 + seeded(lot.seed) * 0.06 : 0.09 + seeded(lot.seed) * 0.05,
           clearcoat: 0.2,
           clearcoatRoughness: 0.5,
         });
@@ -199,14 +202,14 @@ export default function HeroNetworkModel() {
         const d = 0.36 + seeded(lot.seed * 17) * 0.12;
         const h1 = 0.2 + seeded(lot.seed * 19) * 0.1;
         const h2 = 0.14 + seeded(lot.seed * 29) * 0.08;
-        const wall = isDark ? 0x4a3728 : 0xc4a574;
-        const trim = isDark ? 0x5c4435 : 0xd9bc90;
+        const wall = isDark ? 0x4a3728 : 0xc9956a;
+        const trim = isDark ? 0x5c4435 : 0xe8c9a0;
         const matLow = new THREE.MeshPhysicalMaterial({
           color: wall,
           metalness: 0.12,
           roughness: 0.62,
-          emissive: new THREE.Color(success),
-          emissiveIntensity: isDark ? 0.04 : 0.02,
+          emissive: new THREE.Color(isLight ? 0xff6000 : success),
+          emissiveIntensity: isDark ? 0.04 : 0.06,
           clearcoat: 0.08,
           clearcoatRoughness: 0.7,
         });
@@ -215,16 +218,16 @@ export default function HeroNetworkModel() {
           metalness: 0.1,
           roughness: 0.58,
           emissive: new THREE.Color(success),
-          emissiveIntensity: isDark ? 0.035 : 0.018,
+          emissiveIntensity: isDark ? 0.035 : 0.05,
           clearcoat: 0.1,
           clearcoatRoughness: 0.65,
         });
         const roofMat = new THREE.MeshPhysicalMaterial({
-          color: isDark ? 0x7c2d12 : 0xb45309,
+          color: isDark ? 0x7c2d12 : 0xea580c,
           metalness: 0.25,
           roughness: 0.55,
-          emissive: new THREE.Color(0x451a03),
-          emissiveIntensity: isDark ? 0.06 : 0.02,
+          emissive: new THREE.Color(isDark ? 0x451a03 : 0xc2410c),
+          emissiveIntensity: isDark ? 0.06 : 0.08,
           clearcoat: 0.15,
           clearcoatRoughness: 0.55,
         });
@@ -383,7 +386,7 @@ export default function HeroNetworkModel() {
     const shirtMat = new THREE.MeshPhysicalMaterial({
       color: primary,
       emissive: primaryDark,
-      emissiveIntensity: isDark ? 0.12 : 0.07,
+      emissiveIntensity: isDark ? 0.12 : 0.14,
       metalness: 0.25,
       roughness: 0.38,
       clearcoat: 0.15,
@@ -418,7 +421,7 @@ export default function HeroNetworkModel() {
     const phoneScreenMat = new THREE.MeshPhysicalMaterial({
       color: 0x020617,
       emissive: primaryLight,
-      emissiveIntensity: isDark ? 0.55 : 0.42,
+      emissiveIntensity: isDark ? 0.55 : 0.68,
       metalness: 0.15,
       roughness: 0.25,
       clearcoat: 0.85,
@@ -600,15 +603,15 @@ export default function HeroNetworkModel() {
     const linkGeometries: THREE.BufferGeometry[] = [];
     const linkLines: THREE.Line[] = [];
     const linkMatTower = new THREE.LineBasicMaterial({
-      color: success,
+      color: isDark ? success : 0x059669,
       transparent: true,
-      opacity: 0.45,
+      opacity: isDark ? 0.45 : 0.62,
       blending: THREE.AdditiveBlending,
     });
     const linkMatPeer = new THREE.LineBasicMaterial({
-      color: primaryLight,
+      color: isDark ? primaryLight : ORANGE,
       transparent: true,
-      opacity: 0.42,
+      opacity: isDark ? 0.42 : 0.58,
       blending: THREE.AdditiveBlending,
     });
 
@@ -659,26 +662,26 @@ export default function HeroNetworkModel() {
 
       officeMaterials.forEach((mat, i) => {
         const w = Math.sin(t * 1.4 + i * 0.4);
-        mat.emissiveIntensity = (isDark ? 0.05 : 0.025) + w * 0.05 + seeded(i * 1.7) * 0.04;
+        mat.emissiveIntensity = (isDark ? 0.05 : 0.085) + w * 0.05 + seeded(i * 1.7) * 0.04;
       });
       homeMaterials.forEach((mat, i) => {
         const w = Math.sin(t * 1.2 + i * 0.31);
-        mat.emissiveIntensity = (isDark ? 0.038 : 0.018) + w * 0.025;
+        mat.emissiveIntensity = (isDark ? 0.038 : 0.055) + w * 0.025;
       });
       roofHomeMaterials.forEach((mat, i) => {
-        mat.emissiveIntensity = (isDark ? 0.065 : 0.025) + Math.sin(t * 1.5 + i) * 0.02;
+        mat.emissiveIntensity = (isDark ? 0.065 : 0.075) + Math.sin(t * 1.5 + i) * 0.02;
       });
 
-      capMat.emissiveIntensity = (isDark ? 0.28 : 0.17) + Math.sin(t * 1.7) * 0.05;
+      capMat.emissiveIntensity = (isDark ? 0.28 : 0.24) + Math.sin(t * 1.7) * 0.05;
 
-      phoneScreenMat.emissiveIntensity = (isDark ? 0.55 : 0.42) + Math.sin(t * 2.8) * 0.12;
+      phoneScreenMat.emissiveIntensity = (isDark ? 0.55 : 0.68) + Math.sin(t * 2.8) * 0.12;
 
       userRigs.forEach((u, i) => {
         const bob = Math.sin(t * 2 + i * 0.33) * 0.022;
         u.group.position.y = u.baseY + bob;
       });
 
-      beaconMat.emissiveIntensity = (isDark ? 0.9 : 0.65) + Math.sin(t * 4) * 0.2;
+      beaconMat.emissiveIntensity = (isDark ? 0.9 : 0.82) + Math.sin(t * 4) * 0.2;
 
       fill.position.x = 4 + Math.sin(t * 0.38) * 0.75;
       fill.position.z = 5 + Math.cos(t * 0.33) * 0.55;
@@ -713,9 +716,9 @@ export default function HeroNetworkModel() {
         linkGeometries[idx]!.attributes.position.needsUpdate = true;
         const lm = linkLines[idx]!.material as THREE.LineBasicMaterial;
         if (kind === "tower") {
-          lm.opacity = (isDark ? 0.3 : 0.22) + Math.sin(t * 1.7 + idx * 0.3) * 0.09;
+          lm.opacity = (isDark ? 0.3 : 0.42) + Math.sin(t * 1.7 + idx * 0.3) * 0.09;
         } else {
-          lm.opacity = (isDark ? 0.28 : 0.2) + Math.sin(t * 1.8 + idx * 0.31) * 0.085;
+          lm.opacity = (isDark ? 0.28 : 0.38) + Math.sin(t * 1.8 + idx * 0.31) * 0.085;
         }
       });
 
@@ -793,7 +796,13 @@ export default function HeroNetworkModel() {
         container.removeChild(renderer.domElement);
       }
     };
-  }, [theme]);
+  }, [renderTheme]);
 
-  return <div ref={modelContainerRef} className="relative h-full w-full min-h-0 bg-transparent" />;
+  return (
+    <div
+      ref={modelContainerRef}
+      className="hero-network-canvas relative h-full w-full min-h-0 bg-transparent"
+      style={{ opacity }}
+    />
+  );
 }

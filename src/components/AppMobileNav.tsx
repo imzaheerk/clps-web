@@ -93,7 +93,11 @@ export default function AppMobileNav({
         {user ? (
           <div className="header-app-mobile-user">
             <div className="relative flex-shrink-0">
-              <div className="header-app-avatar header-app-avatar--lg">
+              <div
+                className={`header-app-avatar header-app-avatar--lg${
+                  isPremium ? " header-app-avatar--premium" : ""
+                }`}
+              >
                 <span>{(user.name || "U")[0].toUpperCase()}</span>
               </div>
               {isPremium ? (
