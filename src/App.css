@@ -5412,6 +5412,49 @@ html:not([data-theme='dark']) .p-inputtextarea:enabled:focus {
   border-color: rgba(255, 255, 255, 0.16);
 }
 
+@media (max-width: 1023px) {
+  .header-bar--app .header-app-nav {
+    display: none !important;
+  }
+
+  .header-bar--app .header-app-inner {
+    gap: 0.5rem;
+  }
+
+  .header-bar--app .brand-mark-link {
+    min-width: 0;
+    flex-shrink: 1;
+  }
+
+  .header-bar--app .brand-mark--sm .brand-mark-core {
+    font-size: 0.82rem;
+  }
+
+  .header-app-shell {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+
+  .header-app-mobile-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .header-app-mobile-tools .theme-orb {
+    width: 2.35rem;
+    height: 2.35rem;
+    flex-shrink: 0;
+  }
+
+  .header-app-mobile-tools .header-app-menu-btn {
+    width: 2.35rem;
+    height: 2.35rem;
+  }
+}
+
 [data-theme="light"] .header-app-menu-btn {
   border-color: rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.03);
@@ -8914,6 +8957,125 @@ html:not([data-theme='dark']) .p-inputtextarea:enabled:focus {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #e4e4e7;
+}
+
+.app-safety-reminder-text--short {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .app-chat-page.app-resend {
+    height: 100dvh;
+  }
+
+  .app-chat-page .app-resend-content {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .app-chat-page .header-bar--app {
+    display: none;
+  }
+
+  .app-chat-page .header-spacer--app {
+    display: none;
+    height: 0;
+  }
+
+  .app-chat-page .app-chat-layout {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    height: auto;
+  }
+
+  /* Full-width chat — hide sidebar (base CSS display:flex overrides Tailwind hidden) */
+  .app-chat-page .app-chat-sidebar {
+    display: none;
+  }
+
+  .app-chat-page .app-chat-main {
+    display: flex;
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .app-chat-sidebar-head {
+    padding: 0.75rem 0.85rem;
+  }
+
+  .app-chat-tab {
+    font-size: 0.72rem;
+    padding: 0.45rem 0.5rem;
+  }
+
+  .app-chat-conv-item {
+    padding: 0.75rem 0.65rem;
+  }
+
+  .app-chat-header-bar {
+    padding: 0.65rem 0.75rem;
+    padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
+  }
+
+  .app-chat-header-bar .text-xs {
+    display: none;
+  }
+
+  .app-safety-banner,
+  .app-safety-reminder {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+  }
+
+  .app-safety-reminder-text--full {
+    display: none;
+  }
+
+  .app-safety-reminder-text--short {
+    display: inline;
+  }
+
+  .app-chat-messages {
+    padding: 0.75rem 0.65rem;
+    gap: 0.5rem;
+  }
+
+  .app-chat-bubble {
+    max-width: min(88%, 20rem);
+    padding: 0.55rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .app-chat-compose {
+    padding: 0.65rem 0.75rem;
+    padding-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .app-chat-compose .flex.gap-2 {
+    gap: 0.45rem;
+  }
+
+  .app-chat-compose .resend-btn-primary {
+    flex-shrink: 0;
+    min-width: 2.65rem;
+    height: 2.65rem;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .app-chat-header-bar .app-safety-menu-panel {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 3.35rem);
+    right: 0.75rem;
+    left: auto;
+    min-width: 10.5rem;
+    z-index: 120;
+  }
 }
 
 /* Resend toast notifications */

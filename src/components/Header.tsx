@@ -675,7 +675,7 @@ export default function Header({ showAuthButtons = true }: HeaderProps) {
             <button
               type="button"
               onClick={openMobileMenu}
-              className="lg:hidden header-app-menu-btn"
+              className="header-app-menu-btn"
               aria-label="Open menu"
             >
               <i className="pi pi-bars" />

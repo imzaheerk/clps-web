@@ -3,6 +3,22 @@
  * Scoped to [data-theme="light"] .app-resend
  */
 
+[data-theme="light"] {
+  --premium-gold-deep: #78350f;
+  --premium-gold-text: #92400e;
+  --premium-gold-mid: #b45309;
+  --premium-gold-accent: #d97706;
+  --premium-gold-bright: #f59e0b;
+  --premium-gold-light: #fcd34d;
+  --premium-gold-bg: linear-gradient(135deg, #fffbeb 0%, #fef3c7 48%, #fde68a 100%);
+  --premium-gold-badge-bg: linear-gradient(145deg, #fde047 0%, #f59e0b 46%, #d97706 100%);
+  --premium-gold-border: #fbbf24;
+  --premium-gold-ring:
+    0 0 0 2px #fbbf24,
+    0 0 0 4px rgba(251, 191, 36, 0.2),
+    0 4px 14px rgba(217, 119, 6, 0.18);
+}
+
 [data-theme="light"] .app-resend {
   --al-bg: #ffffff;
   --al-bg-soft: #fafaf9;
@@ -66,18 +82,26 @@
 [data-theme="light"] .header-app-avatar--premium,
 [data-theme="light"] .header-account-trigger-avatar--premium,
 [data-theme="light"] .header-account-menu-avatar--premium {
-  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.38);
+  box-shadow: var(--premium-gold-ring);
 }
 
 [data-theme="light"] .header-app-premium,
 [data-theme="light"] .header-account-trigger-premium,
 [data-theme="light"] .header-account-menu-avatar-premium {
-  border-color: #ffffff;
-  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
-  color: #ffffff;
+  border: 2px solid #ffffff;
+  background: var(--premium-gold-badge-bg);
+  color: var(--premium-gold-deep);
   box-shadow:
-    0 1px 4px rgba(245, 158, 11, 0.35),
-    0 0 0 1px rgba(245, 158, 11, 0.15);
+    0 2px 8px rgba(217, 119, 6, 0.42),
+    0 0 0 1px rgba(251, 191, 36, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="light"] .header-app-premium i,
+[data-theme="light"] .header-account-trigger-premium i,
+[data-theme="light"] .header-account-menu-avatar-premium i {
+  color: var(--premium-gold-deep);
+  filter: drop-shadow(0 1px 0 rgba(255, 255, 255, 0.45));
 }
 
 [data-theme="light"] .header-app-badge {
@@ -157,9 +181,16 @@
 }
 
 [data-theme="light"] .header-account-menu-plan {
-  color: #b45309;
-  background: #fffbeb;
-  border-color: #fde68a;
+  color: var(--premium-gold-text);
+  background: var(--premium-gold-bg);
+  border: 1px solid var(--premium-gold-border);
+  box-shadow:
+    0 1px 3px rgba(217, 119, 6, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+[data-theme="light"] .header-account-menu-plan i {
+  color: var(--premium-gold-accent);
 }
 
 [data-theme="light"] .header-account-menu-logout {
@@ -554,9 +585,16 @@
 }
 
 [data-theme="light"] .resend-pill--premium {
-  color: #b45309;
-  background: #fffbeb;
-  border-color: #fde68a;
+  color: var(--premium-gold-text);
+  background: var(--premium-gold-bg);
+  border: 1px solid var(--premium-gold-border);
+  box-shadow:
+    0 1px 4px rgba(217, 119, 6, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+[data-theme="light"] .resend-pill--premium i {
+  color: var(--premium-gold-accent);
 }
 
 [data-theme="light"] .resend-pill--success {
@@ -702,7 +740,11 @@
 }
 
 [data-theme="light"] .app-sub-plan--premium {
-  border-color: rgba(245, 158, 11, 0.35);
+  border-color: var(--premium-gold-border);
+  background: linear-gradient(180deg, #fffbeb 0%, #ffffff 38%);
+  box-shadow:
+    0 0 0 1px rgba(251, 191, 36, 0.15),
+    0 8px 28px rgba(217, 119, 6, 0.08);
 }
 
 /* ——— Reactions & chips ——— */
@@ -863,8 +905,9 @@
 }
 
 [data-theme="light"] .app-result-card--premium {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: #fffbeb;
+  border-color: var(--premium-gold-border);
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 55%);
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.08);
 }
 
 /* ——— Action cards base ——— */
@@ -900,13 +943,21 @@
 }
 
 [data-theme="light"] .app-dash-status-pill--premium {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: #fffbeb;
-  color: #b45309;
+  border: 1px solid var(--premium-gold-border);
+  background: var(--premium-gold-bg);
+  color: var(--premium-gold-text);
+  box-shadow:
+    0 1px 4px rgba(217, 119, 6, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
 [data-theme="light"] .app-dash-status-pill--premium i {
-  color: #d97706;
+  color: var(--premium-gold-accent);
+}
+
+[data-theme="light"] .app-discovery-radius-premium-icon {
+  color: var(--premium-gold-accent);
+  filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.45));
 }
 
 [data-theme="light"] .app-dash-mini-icon {

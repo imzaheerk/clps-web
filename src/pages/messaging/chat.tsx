@@ -269,13 +269,13 @@ export default function Chat() {
   const isMessagingBlocked = blockStatus?.isBlocked ?? false;
 
   return (
-    <div className="app-resend h-screen flex flex-col relative overflow-hidden">
+    <div className="app-resend app-chat-page h-screen flex flex-col relative overflow-hidden">
       <AppBackground />
       <div className="app-resend-content flex flex-col flex-1 min-h-0">
       <Header showAuthButtons={false} />
 
       <div className="app-chat-layout">
-        <div className={`app-chat-sidebar ${conversationId ? "hidden md:flex" : "flex"}`}>
+        <div className="app-chat-sidebar">
           <div className="app-chat-sidebar-head">
             <div className="flex items-center gap-3 mb-3">
               <button type="button" onClick={() => navigate("/messaging")} className="header-app-icon-btn md:hidden" aria-label="Back">
@@ -339,7 +339,7 @@ export default function Chat() {
         </div>
 
         {/* Right Side - Chat Interface - Separate Section */}
-        <div className={`app-chat-main ${conversationId ? "flex" : "hidden md:flex"}`}>
+        <div className="app-chat-main">
           {!conversationId || !conversation ? (
             <div className="flex-1 flex items-center justify-center p-8">
               <div className="text-center max-w-md">
@@ -394,7 +394,12 @@ export default function Chat() {
               ) : (
                 <div className="app-safety-reminder">
                   <i className="pi pi-eye-slash" />
-                  <span>Share your phone number only when you trust someone. Use number reveal requests for extra privacy.</span>
+                  <span className="app-safety-reminder-text app-safety-reminder-text--full">
+                    Share your phone number only when you trust someone. Use number reveal requests for extra privacy.
+                  </span>
+                  <span className="app-safety-reminder-text app-safety-reminder-text--short" aria-hidden="true">
+                    Share contact details only when you trust someone.
+                  </span>
                 </div>
               )}
 

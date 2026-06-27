@@ -966,6 +966,15 @@
   color: var(--ll-brand);
 }
 
+[data-theme="light"] .landing-resend .landing-modules-badge--premium {
+  color: #92400e;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 48%, #fde68a 100%);
+  border-color: #fbbf24;
+  box-shadow:
+    0 1px 4px rgba(217, 119, 6, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
 /* ——— Pricing snapshot (light) ——— */
 [data-theme="light"] .landing-resend .landing-pricing-v2-spotlight {
   border-color: rgba(24, 24, 27, 0.12);
