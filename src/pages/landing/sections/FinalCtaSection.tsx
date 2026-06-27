@@ -31,6 +31,7 @@ export default function FinalCtaSection() {
     <ScrollReveal variant="blur-up">
       <ResendFeatureBlock
         glow="sky"
+        iconVariant="get-started"
         kicker="Get started"
         title="Ready to Build Real Local Connections?"
         description="Join Checknown to discover nearby people, share important updates, and grow your trusted local network."
@@ -44,7 +45,7 @@ export default function FinalCtaSection() {
               <div className="cta-connect-visual-caption">
                 <span className="cta-connect-live">
                   <span className="cta-connect-live-dot" />
-                  Live network
+                  Nearby · Connected
                 </span>
               </div>
             </div>
